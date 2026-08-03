@@ -12,9 +12,15 @@ export default function NewTripModal({ open, cities, onCancel, onCreate }) {
     const values = await form.validateFields();
     setLoading(true);
     try {
+      // Name it here rather than let the server do it: the server has no idea which language the
+      // traveler is reading, and "3 days in Tokyo" in a Chinese UI reads like a bug.
+      const city = cities.find((c) => c.id === values.cityId);
+      const title =
+        values.title?.trim() ||
+        t('newTrip.defaultTitle', { days: values.numDays, city: city?.name ?? '' });
       await onCreate({
         cityId: values.cityId,
-        title: values.title,
+        title,
         numDays: values.numDays,
         startDate: values.startDate ? values.startDate.format('YYYY-MM-DD') : null,
       });

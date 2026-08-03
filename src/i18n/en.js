@@ -46,6 +46,7 @@ const en = {
   'newTrip.namePlaceholder': 'Long weekend in Tokyo',
   'newTrip.days': 'How many days? (1–15)',
   'newTrip.startDate': 'Starting',
+  'newTrip.defaultTitle': '{days} days in {city}',
   'newTrip.placeCount': '{count} places',
 
   // explore

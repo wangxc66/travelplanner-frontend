@@ -44,6 +44,7 @@ const zh = {
   'newTrip.namePlaceholder': '东京长周末',
   'newTrip.days': '几天？（1–15）',
   'newTrip.startDate': '出发日期',
+  'newTrip.defaultTitle': '{city} {days} 天',
   'newTrip.placeCount': '{count} 个景点',
 
   // 探索
