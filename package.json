@@ -8,6 +8,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@react-google-maps/api": "^2.20.7",
+    "antd": "^5.29.3",
     "axios": "^1.7.9",
     "dayjs": "^1.11.13",
     "leaflet": "^1.9.4",
