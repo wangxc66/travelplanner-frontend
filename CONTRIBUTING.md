@@ -1,6 +1,6 @@
 # 参与开发
 
-这是前端仓库。后端在 [travelplanner](https://github.com/wangxc66/travelplanner)，
+前端仓库。后端链接在 [travelplanner](https://github.com/wangxc66/travelplanner)，
 两边的流程是一样的。开发时两个都要跑起来。
 
 ## 第一次上手
