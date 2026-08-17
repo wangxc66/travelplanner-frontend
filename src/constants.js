@@ -1,23 +1,35 @@
+import {
+  BankOutlined,
+  CoffeeOutlined,
+  EnvironmentOutlined,
+  EyeOutlined,
+  MoonOutlined,
+  PictureOutlined,
+  PushpinOutlined,
+  ShoppingOutlined,
+  SunOutlined,
+} from '@ant-design/icons';
+
+/**
+ * `Icon` is the component, not an element: callers size and colour it themselves. Line icons rather
+ * than emoji — emoji render differently on every platform and read as noise next to antd's own set.
+ */
 export const CATEGORY_STYLE = {
-  Landmark: { color: '#3b6cff', icon: '📍' },
-  Museum: { color: '#7c3aed', icon: '🖼️' },
-  Park: { color: '#10b981', icon: '🌳' },
-  Food: { color: '#ef4444', icon: '🍜' },
-  Shopping: { color: '#ec4899', icon: '🛍️' },
-  Nightlife: { color: '#f59e0b', icon: '🍸' },
-  Temple: { color: '#0ea5e9', icon: '⛩️' },
-  Viewpoint: { color: '#14b8a6', icon: '🔭' },
+  Landmark: { color: '#3b6cff', Icon: EnvironmentOutlined },
+  Museum: { color: '#7c3aed', Icon: PictureOutlined },
+  Park: { color: '#10b981', Icon: SunOutlined },
+  Food: { color: '#ef4444', Icon: CoffeeOutlined },
+  Shopping: { color: '#ec4899', Icon: ShoppingOutlined },
+  Nightlife: { color: '#f59e0b', Icon: MoonOutlined },
+  Temple: { color: '#0ea5e9', Icon: BankOutlined },
+  Viewpoint: { color: '#14b8a6', Icon: EyeOutlined },
 };
 
 export const categoryStyle = (category) =>
-  CATEGORY_STYLE[category] || { color: '#94a3b8', icon: '📌' };
+  CATEGORY_STYLE[category] || { color: '#94a3b8', Icon: PushpinOutlined };
 
 /** Labels come from the dictionary via `t('mode.' + value)`. */
-export const MODES = [
-  { value: 'WALK', icon: '🚶' },
-  { value: 'TRANSIT', icon: '🚇' },
-  { value: 'DRIVE', icon: '🚗' },
-];
+export const MODES = ['WALK', 'TRANSIT', 'DRIVE'];
 
 export const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Button, Form, Input, Segmented } from 'antd';
+import { CompassOutlined } from '@ant-design/icons';
 import { api, errorNotice, session } from '../api';
 import { useI18n } from '../i18n';
 import LanguageSwitch from './LanguageSwitch';
@@ -29,9 +30,11 @@ export default function AuthPage({ onAuthenticated }) {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="auth-head">
           <div className="brand">
-            <span className="brand-mark">🧭</span>
+            <span className="brand-mark">
+              <CompassOutlined />
+            </span>
             {t('app.name')}
           </div>
           <LanguageSwitch />
@@ -47,7 +50,7 @@ export default function AuthPage({ onAuthenticated }) {
           ]}
           value={mode}
           onChange={setMode}
-          style={{ marginBottom: 18 }}
+          style={{ margin: '24px 0 20px' }}
         />
 
         {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 14 }} />}
@@ -81,9 +84,7 @@ export default function AuthPage({ onAuthenticated }) {
           </Button>
         </Form>
 
-        <div className="auth-sub" style={{ margin: '16px 0 0', fontSize: 12 }}>
-          {t('auth.footnote')}
-        </div>
+        <div className="auth-footnote">{t('auth.footnote')}</div>
       </div>
     </div>
   );

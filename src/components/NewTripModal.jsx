@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DatePicker, Form, Input, Modal, Slider } from 'antd';
+import { CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useI18n } from '../i18n';
 
@@ -39,6 +40,7 @@ export default function NewTripModal({ open, cities, onCancel, onCreate }) {
       onOk={submit}
       confirmLoading={loading}
       destroyOnHidden
+      width={480}
     >
       <Form
         form={form}
@@ -51,7 +53,7 @@ export default function NewTripModal({ open, cities, onCancel, onCreate }) {
         requiredMark={false}
       >
         <Form.Item name="cityId" label={t('newTrip.city')} rules={[{ required: true }]}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="city-chips">
             {cities.map((city) => (
               <CityChip key={city.id} city={city} form={form} t={t} />
             ))}
@@ -64,7 +66,7 @@ export default function NewTripModal({ open, cities, onCancel, onCreate }) {
           <Slider min={1} max={15} marks={{ 1: '1', 5: '5', 10: '10', 15: '15' }} />
         </Form.Item>
         <Form.Item name="startDate" label={t('newTrip.startDate')}>
-          <DatePicker style={{ width: '100%' }} />
+          <DatePicker style={{ width: '100%' }} suffixIcon={null} prefix={<CalendarOutlined />} />
         </Form.Item>
       </Form>
     </Modal>
@@ -76,27 +78,13 @@ function CityChip({ city, form, t }) {
   return (
     <button
       type="button"
+      className={`city-chip${selected ? ' active' : ''}`}
       onClick={() => form.setFieldValue('cityId', city.id)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '9px 13px',
-        borderRadius: 12,
-        cursor: 'pointer',
-        background: '#fff',
-        border: `1px solid ${selected ? 'var(--accent)' : 'var(--line)'}`,
-        boxShadow: selected ? '0 0 0 3px rgba(59,108,255,0.12)' : 'none',
-        fontSize: 13,
-        fontWeight: selected ? 600 : 400,
-      }}
     >
-      <span style={{ fontSize: 17 }}>{city.heroEmoji}</span>
-      <span>
-        {city.name}
-        <span style={{ color: 'var(--ink-soft)', fontSize: 11, marginLeft: 6 }}>
-          {t('newTrip.placeCount', { count: city.poiCount })}
-        </span>
+      <span className="city-chip-hero">{city.heroEmoji}</span>
+      <span className="city-chip-labels">
+        <span className="city-chip-name">{city.name}</span>
+        <span className="city-chip-count">{t('newTrip.placeCount', { count: city.poiCount })}</span>
       </span>
     </button>
   );

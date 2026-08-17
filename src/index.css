@@ -1,13 +1,31 @@
+/**
+ * Design tokens mirror the Figma variable collection (TripCanvas FE Design → 03 Explorations → B).
+ * Anything with a `--` name here has a counterpart in the file; keep the two in step.
+ */
 :root {
   --ink: #0f172a;
   --ink-soft: #64748b;
   --line: #e6e9f0;
+  --border-split: #f0f0f0;
   --surface: #ffffff;
   --canvas: #f4f6fa;
   --accent: #3b6cff;
+  --accent-soft: #b5cfff;
+  --border-accent-soft: #dbe4ff;
   --route: #ff6b35;
   --warn: #f59e0b;
+  --bg-card-planned: #f7f9ff;
+  --bg-summary: #f7f9fc;
+  --bg-load-track: #eef1f6;
+  --map-rail: #cbd5e1;
+
+  --radius-control: 8px;
+  --radius-lg: 12px;
+  --radius-surface: 16px;
+  --radius-pill: 999px;
+
   --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+  --focus-ring: 0 0 0 3px rgba(59, 108, 255, 0.12);
 }
 
 * {
@@ -25,7 +43,8 @@ body,
 body {
   background: var(--canvas);
   color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial,
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -45,9 +64,9 @@ body {
 .topbar {
   display: flex;
   align-items: center;
-  gap: 14px;
-  height: 58px;
-  padding: 0 18px;
+  gap: 12px;
+  height: 56px;
+  padding: 0 20px;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   flex: none;
@@ -57,10 +76,10 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-weight: 650;
+  gap: 10px;
+  font-weight: 700;
   font-size: 16px;
-  letter-spacing: -0.2px;
+  line-height: 24px;
 }
 
 .brand-mark {
@@ -68,10 +87,72 @@ body {
   height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
+  border-radius: var(--radius-control);
   background: linear-gradient(140deg, var(--accent), #7c3aed);
   color: #fff;
-  font-size: 15px;
+  font-size: 18px;
+}
+
+/* Trip picker and trip settings were two controls in the top bar; the design folds them into one
+   two-line tile, which also lifts the truncation ceiling off long trip titles. */
+.trip-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  max-width: 320px;
+  margin-left: 12px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: var(--canvas);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.trip-control:hover {
+  border-color: var(--border-accent-soft);
+}
+
+.trip-control-hero {
+  font-size: 16px;
+  line-height: 20px;
+  flex: none;
+}
+
+.trip-control-labels {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.trip-control-title {
+  display: block;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-control-meta {
+  display: block;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-control-caret {
+  flex: none;
+  color: var(--ink-soft);
+  font-size: 12px;
 }
 
 .topbar-spacer {
@@ -85,7 +166,7 @@ body {
 }
 
 .side {
-  width: 428px;
+  width: 392px;
   flex: none;
   display: flex;
   flex-direction: column;
@@ -114,6 +195,11 @@ body {
 
 .side .ant-tabs-nav {
   flex: none;
+  height: 48px;
+}
+
+.side .ant-tabs-nav::before {
+  border-bottom-color: var(--border-split);
 }
 
 .map-area {
@@ -133,14 +219,20 @@ body {
 
 /* ---------------- panels ---------------- */
 
+/* Search, filters and day tabs stay put; only the list below them scrolls. */
 .panel-head {
-  padding: 14px 16px 0;
+  flex: none;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border-split);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .panel-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 16px 24px;
+  padding: 12px 16px 20px;
   min-height: 0;
 }
 
@@ -153,86 +245,203 @@ body {
   border-radius: 8px;
 }
 
+.panel-note {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-soft);
+}
+
+.panel-center {
+  flex: 1;
+  display: grid;
+  place-items: center;
+}
+
+/* ---------------- category chips ---------------- */
+
+/* Eight categories never fit on 352px, so the strip scrolls sideways rather than wrapping into a
+   second row that would push the list down. The scrollbar is left visible: without it there is
+   nothing to say the row continues past the right edge. */
+.chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  /* Chromium honours scrollbar-width/-color over the ::-webkit- rules when both are set; those are
+     kept below for browsers that only understand the older syntax. */
+  scrollbar-width: thin;
+  scrollbar-color: #d0d6e2 var(--bg-load-track);
+  padding-bottom: 8px;
+}
+
+.chip-row::-webkit-scrollbar {
+  height: 6px;
+}
+
+.chip-row::-webkit-scrollbar-track {
+  background: var(--bg-load-track);
+  border-radius: var(--radius-pill);
+}
+
+.chip-row::-webkit-scrollbar-thumb {
+  background: #d0d6e2;
+  border-radius: var(--radius-pill);
+}
+
+.chip-row::-webkit-scrollbar-thumb:hover {
+  background: var(--map-rail);
+}
+
+.chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: rgba(0, 0, 0, 0.88);
+  font-size: 12px;
+  line-height: 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.chip .anticon {
+  font-size: 14px;
+}
+
+.chip:hover {
+  border-color: var(--accent-soft);
+}
+
+.chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: var(--focus-ring);
+}
+
 /* ---------------- POI cards ---------------- */
 
 .poi-card {
   display: flex;
-  gap: 10px;
-  padding: 11px 12px;
+  align-items: stretch;
+  overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  margin-bottom: 8px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 10px;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
   background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .poi-card:hover {
-  border-color: #c7d2fe;
+  border-color: var(--accent-soft);
   box-shadow: var(--shadow);
 }
 
 .poi-card.is-added {
-  background: #f7f9ff;
-  border-color: #dbe4ff;
+  background: var(--bg-card-planned);
+  border-color: var(--border-accent-soft);
+}
+
+/* The category colour reads as a rail down the card edge instead of a dot next to the title. */
+.poi-rail {
+  width: 3px;
+  flex: none;
 }
 
 .poi-card-body {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.poi-icon {
+  flex: none;
+  font-size: 18px;
+}
+
+.poi-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .poi-name {
-  font-weight: 600;
-  font-size: 13.5px;
-  line-height: 1.35;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .poi-meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
-  color: var(--ink-soft);
-  font-size: 11.5px;
-}
-
-.poi-desc {
-  margin-top: 5px;
+  align-items: center;
+  gap: 12px;
   color: var(--ink-soft);
   font-size: 12px;
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-height: 16px;
   overflow: hidden;
 }
 
-.cat-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.poi-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.poi-meta .anticon {
+  font-size: 14px;
+}
+
+.poi-desc {
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.poi-card .ant-btn {
   flex: none;
 }
 
-/* ---------------- day pills ---------------- */
+/* ---------------- day tabs ---------------- */
 
 .day-strip {
   display: flex;
-  gap: 8px;
+  gap: 5px;
   overflow-x: auto;
-  padding: 2px 2px 10px;
+  scrollbar-width: none;
+  padding-bottom: 2px;
 }
 
+.day-strip::-webkit-scrollbar {
+  display: none;
+}
+
+/* 84px rather than the old 92: five days fit the strip before it has to scroll. */
 .day-pill {
   flex: none;
-  width: 92px;
-  padding: 8px 10px;
+  width: 84px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   cursor: pointer;
   text-align: left;
@@ -240,12 +449,16 @@ body {
 }
 
 .day-pill:hover {
-  border-color: #c7d2fe;
+  border-color: var(--accent-soft);
 }
 
 .day-pill.active {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(59, 108, 255, 0.12);
+  background: var(--bg-card-planned);
+}
+
+.day-pill.active .day-pill-title {
+  color: var(--accent);
 }
 
 .day-pill.drop-target {
@@ -254,28 +467,29 @@ body {
 }
 
 .day-pill-title {
-  font-weight: 650;
-  font-size: 12.5px;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 .day-pill-sub {
   color: var(--ink-soft);
-  font-size: 10.5px;
-  margin-top: 1px;
+  font-size: 11px;
+  line-height: 16px;
 }
 
 .load-bar {
-  height: 4px;
-  border-radius: 4px;
-  background: #eef1f6;
-  margin-top: 7px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--bg-load-track);
+  margin-top: 6px;
   overflow: hidden;
 }
 
 .load-bar span {
   display: block;
   height: 100%;
-  border-radius: 4px;
+  border-radius: 2px;
   background: var(--accent);
   transition: width 0.3s;
 }
@@ -284,122 +498,274 @@ body {
   background: var(--warn);
 }
 
-/* ---------------- itinerary rows ---------------- */
-
-.leg {
+.plan-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  color: var(--ink-soft);
-  font-size: 11.5px;
-  padding: 3px 0 3px 15px;
-  position: relative;
+  gap: 8px;
 }
 
-.leg::before {
-  content: '';
-  position: absolute;
-  left: 13px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: repeating-linear-gradient(to bottom, #cbd5e1 0 3px, transparent 3px 6px);
-}
+/* ---------------- itinerary timeline ---------------- */
 
+/* The index badge sits on a continuous rail, so consecutive stops read as one line rather than a
+   stack of separate cards. */
 .stop {
   display: flex;
-  gap: 10px;
-  padding: 10px 12px 10px 8px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
   align-items: flex-start;
+  cursor: pointer;
+  border-radius: var(--radius-control);
+  transition: background 0.15s;
+}
+
+.stop:hover {
+  background: var(--bg-card-planned);
 }
 
 .stop.dragging {
+  background: var(--bg-card-planned);
   box-shadow: var(--shadow);
-  border-color: var(--accent);
+}
+
+.stop-rail {
+  position: relative;
+  width: 28px;
+  flex: none;
+  align-self: stretch;
+}
+
+.stop-rail::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--map-rail);
+}
+
+/* The first stop has no incoming leg and the last has no outgoing one, so the rail is cut back to
+   the badge at either end instead of dangling into empty space. */
+.stop-rail.is-first::before {
+  top: 16px;
+}
+
+.stop-rail.is-last::before {
+  bottom: calc(100% - 16px);
 }
 
 .stop-index {
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  transform: translateX(-50%);
   width: 24px;
   height: 24px;
-  flex: none;
   border-radius: 50%;
+  border: 2px solid var(--surface);
   background: var(--accent);
   color: #fff;
-  font-size: 12px;
-  font-weight: 650;
+  font-size: 11px;
+  line-height: 16px;
   display: grid;
   place-items: center;
-  margin-top: 1px;
 }
 
 .stop-body {
   flex: 1;
   min-width: 0;
+  padding: 4px 0 16px 12px;
+}
+
+.stop-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.stop-name .anticon {
+  color: var(--ink-soft);
+  font-size: 12px;
 }
 
 .stop-time {
   font-variant-numeric: tabular-nums;
   color: var(--ink-soft);
-  font-size: 11.5px;
-  margin-top: 2px;
+  font-size: 12px;
+  line-height: 16px;
 }
 
+/* Row actions stay out of the way until the row is pointed at; they are still reachable by keyboard
+   because :focus-within counts. */
 .stop-actions {
   display: flex;
-  gap: 2px;
   align-items: center;
+  gap: 2px;
+  padding-top: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
 
+.stop:hover .stop-actions,
+.stop-actions:focus-within {
+  opacity: 1;
+}
+
+.stop-actions .ant-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-control);
+}
+
+/* Reorder mode: the timeline goes back to discrete cards with an explicit handle, so it is obvious
+   which rows can be grabbed and where one stop ends and the next begins. */
 .drag-handle {
-  cursor: grab;
-  color: #c3cad8;
-  padding: 2px 1px;
+  display: none;
+  align-items: center;
   align-self: center;
+  flex: none;
+  padding: 2px 1px;
+  color: #c3cad8;
+  cursor: grab;
 }
 
 .drag-handle:active {
   cursor: grabbing;
 }
 
-.warn-line {
-  margin-top: 5px;
-  font-size: 11.5px;
-  color: #b45309;
-  background: #fffbeb;
-  border-radius: 7px;
-  padding: 4px 7px;
-  line-height: 1.35;
+.stop-list.is-reordering .drag-handle {
+  display: flex;
 }
 
-.day-summary {
-  display: flex;
-  gap: 14px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #f7f9fc;
+.stop-list.is-reordering .stop {
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  padding: 10px 12px 10px 8px;
   border: 1px solid var(--line);
-  font-size: 11.5px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  cursor: default;
+}
+
+.stop-list.is-reordering .stop:hover {
+  border-color: var(--accent-soft);
+  background: var(--surface);
+}
+
+.stop-list.is-reordering .stop.dragging {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+/* No rail between cards, and the badge sits inline instead of riding on it. */
+.stop-list.is-reordering .stop-rail::before {
+  display: none;
+}
+
+.stop-list.is-reordering .stop-rail {
+  width: 24px;
+  height: 24px;
+  align-self: flex-start;
+  margin-top: 1px;
+  cursor: default;
+}
+
+.stop-list.is-reordering .stop-index {
+  position: static;
+  transform: none;
+  border: none;
+}
+
+.stop-list.is-reordering .stop-body {
+  padding: 0;
+}
+
+/* Nothing to reveal on hover when the row is already a card. */
+.stop-list.is-reordering .stop-actions {
+  padding-top: 0;
+  opacity: 1;
+}
+
+.stop-list.is-reordering .leg::before {
+  background: repeating-linear-gradient(to bottom, var(--map-rail) 0 3px, transparent 3px 6px);
+}
+
+.leg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   color: var(--ink-soft);
-  margin-top: 12px;
+  font-size: 11px;
+  line-height: 20px;
+  min-height: 20px;
+  position: relative;
+  padding-left: 40px;
+}
+
+.leg::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--map-rail);
+}
+
+.leg .anticon {
+  font-size: 12px;
+}
+
+.warn-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #b45309;
+  background: #fffbeb;
+  border-radius: 6px;
+  padding: 4px 7px;
+}
+
+/* Pinned under the scroll area: the day's totals are a status bar, not the tail of the list. */
+.day-summary {
+  flex: none;
+  display: flex;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--bg-summary);
+  border-top: 1px solid var(--border-split);
 }
 
 .day-summary b {
   display: block;
   color: var(--ink);
-  font-size: 14px;
+  font-size: 12px;
+  line-height: 16px;
   font-variant-numeric: tabular-nums;
+}
+
+.day-summary span {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 16px;
 }
 
 .empty-day {
   text-align: center;
-  padding: 34px 16px;
+  padding: 32px 16px;
   color: var(--ink-soft);
-  font-size: 12.5px;
+  font-size: 12px;
+  line-height: 1.7;
   border: 1px dashed var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 /* ---------------- map bits ---------------- */
@@ -412,7 +778,7 @@ body {
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(6px);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 9px 12px;
   font-size: 11.5px;
   color: var(--ink-soft);
@@ -427,7 +793,7 @@ body {
   z-index: 400;
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 5px 12px;
   font-size: 11.5px;
   color: var(--ink-soft);
@@ -473,30 +839,96 @@ body {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(900px 500px at 15% -10%, #dbe4ff 0%, transparent 60%),
+    radial-gradient(900px 500px at 15% -10%, var(--border-accent-soft) 0%, transparent 60%),
     radial-gradient(700px 500px at 95% 110%, #ffe4d6 0%, transparent 55%),
     var(--canvas);
 }
 
 .auth-card {
-  width: 372px;
+  width: 400px;
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 28px;
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-surface);
+  padding: 32px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.auth-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .auth-title {
-  font-size: 21px;
-  font-weight: 680;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
   letter-spacing: -0.4px;
-  margin: 14px 0 4px;
+  margin: 24px 0 8px;
 }
 
 .auth-sub {
   color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.auth-footnote {
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 16px;
+  margin-top: 16px;
+}
+
+/* ---------------- new trip dialog ---------------- */
+
+.city-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.city-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: all 0.15s;
+}
+
+.city-chip:hover {
+  border-color: var(--accent-soft);
+}
+
+.city-chip.active {
+  border-color: var(--accent);
+  background: var(--bg-card-planned);
+  box-shadow: var(--focus-ring);
+}
+
+.city-chip-hero {
+  font-size: 17px;
+  line-height: 20px;
+}
+
+.city-chip-labels {
+  display: flex;
+  flex-direction: column;
+}
+
+.city-chip-name {
   font-size: 13px;
-  margin-bottom: 20px;
-  line-height: 1.5;
+  line-height: 20px;
+  font-weight: 700;
+}
+
+.city-chip-count {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-soft);
 }

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { App as AntApp, Button, ConfigProvider, Dropdown, Popover, Select, Slider, Spin, Tabs } from 'antd';
+import { App as AntApp, Button, ConfigProvider, Divider, Dropdown, Popover, Slider, Spin, Tabs } from 'antd';
+import { CompassOutlined, DownOutlined, PlusOutlined, UserOutlined } from '@ant-design/icons';
 import { api, errorNotice, session, setUnauthorizedHandler } from './api';
 import AuthPage from './components/AuthPage';
 import ExplorePanel from './components/ExplorePanel';
@@ -7,14 +8,24 @@ import ItineraryPanel from './components/ItineraryPanel';
 import LanguageSwitch from './components/LanguageSwitch';
 import NewTripModal from './components/NewTripModal';
 import MapCanvas from './components/map/MapCanvas';
-import { I18nProvider, useI18n } from './i18n';
+import { autoNamedIn, defaultTripTitle, I18nProvider, useI18n } from './i18n';
 
 const THEME = {
   token: {
     colorPrimary: '#3b6cff',
-    borderRadius: 10,
+    // 8 everywhere, per the design's radius/control token — antd's 6/10/12 mix showed up as three
+    // different corner radii sitting next to each other in the same panel.
+    borderRadius: 8,
+    // antd derives small controls from borderRadiusSM (6) and large ones from borderRadiusLG (10);
+    // the design normalises every control to 8, so the small Optimize/Add buttons and the large auth
+    // fields match the inputs beside them.
+    borderRadiusSM: 8,
+    borderRadiusLG: 8,
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif",
+  },
+  components: {
+    Tabs: { horizontalItemPadding: '14px 0', horizontalItemGutter: 24 },
   },
 };
 
@@ -162,13 +173,27 @@ function Root() {
 
   // ---------- mutations: every call returns the whole trip, so state stays in one place ----------
 
+  /**
+   * One mutation at a time. Every call here returns the whole recomputed trip, so a second one
+   * started before the first lands was computed against state we are about to throw away — and if
+   * it names a stop the first one removed, the server answers a bare 403, which is indistinguishable
+   * from a dead session. A ref rather than `busy`, because two clicks in one tick both read the
+   * same render's state.
+   */
+  const mutating = useRef(false);
+
   const apply = async (label, fn) => {
+    if (mutating.current) {
+      return;
+    }
+    mutating.current = true;
     setBusy(label);
     try {
       setTrip(await fn());
     } catch (e) {
       fail(e);
     } finally {
+      mutating.current = false;
       setBusy(null);
     }
   };
@@ -205,6 +230,28 @@ function Root() {
       message.success(t('plan.rebalanced'));
       return updated;
     });
+
+  /**
+   * A trip the traveller never named carries the day count in its title ("3 days in San Francisco").
+   * Changing the length from the top bar has to carry the title along, or the two disagree; a title
+   * the traveller typed themselves is left exactly as it is.
+   */
+  const updateSettings = (body) => {
+    const patch = { ...body };
+    if (body.numDays && body.numDays !== trip.numDays) {
+      const namedIn = autoNamedIn(trip.title, trip.numDays, trip.city.name);
+      if (namedIn) {
+        patch.title = defaultTripTitle(namedIn, body.numDays, trip.city.name);
+      }
+    }
+    return apply('settings', async () => {
+      const updated = await api.updateTrip(trip.id, patch);
+      if (patch.title) {
+        setTrips(await api.trips());
+      }
+      return updated;
+    });
+  };
 
   const applySuggestion = (suggestion) => {
     if (suggestion.kind === 'REBALANCE' && suggestion.itemId) {
@@ -245,41 +292,48 @@ function Root() {
     <div className="app">
       <div className="topbar">
         <div className="brand">
-          <span className="brand-mark">🧭</span>
+          <span className="brand-mark">
+            <CompassOutlined />
+          </span>
           {t('app.name')}
         </div>
-
-        {trips.length > 0 && (
-          <Select
-            value={trip?.id}
-            style={{ minWidth: 230 }}
-            onChange={openTrip}
-            options={trips.map((item) => ({
-              value: item.id,
-              label: t('top.tripOption', {
-                emoji: item.heroEmoji,
-                title: item.title,
-                days: item.numDays,
-                stops: item.plannedCount,
-              }),
-            }))}
-          />
-        )}
-        <Button onClick={() => setNewTripOpen(true)}>{t('top.newTrip')}</Button>
 
         {trip && (
           <Popover
             trigger="click"
+            placement="bottomLeft"
             title={t('settings.title')}
-            content={<TripSettings trip={trip} onChange={(body) => apply('settings', () => api.updateTrip(trip.id, body))} />}
+            content={
+              <TripSettings
+                trip={trip}
+                trips={trips}
+                onOpenTrip={openTrip}
+                onChange={updateSettings}
+              />
+            }
           >
-            <Button type="text">
-              {t('top.tripSummary', { days: trip.numDays, hour: trip.dayStartHour })} ⌄
-            </Button>
+            <button type="button" className="trip-control">
+              <span className="trip-control-hero">{trip.city.heroEmoji}</span>
+              <span className="trip-control-labels">
+                <span className="trip-control-title">{trip.title}</span>
+                <span className="trip-control-meta">
+                  {t('top.tripSummary', {
+                    days: trip.numDays,
+                    stops: trip.plannedCount,
+                    hour: trip.dayStartHour,
+                  })}
+                </span>
+              </span>
+              <DownOutlined className="trip-control-caret" />
+            </button>
           </Popover>
         )}
 
         <div className="topbar-spacer" />
+
+        <Button icon={<PlusOutlined />} onClick={() => setNewTripOpen(true)}>
+          {t('top.newTrip')}
+        </Button>
 
         <LanguageSwitch />
 
@@ -287,14 +341,14 @@ function Root() {
           menu={{ items: [{ key: 'out', label: t('auth.signOut'), onClick: signOut }] }}
           trigger={['click']}
         >
-          <Button type="text">👤 {user.displayName || user.username} ⌄</Button>
+          <Button icon={<UserOutlined />}>{user.displayName || user.username}</Button>
         </Dropdown>
       </div>
 
       <div className="workspace">
         <aside className="side">
           {!trip || loadingTrip ? (
-            <div style={{ display: 'grid', placeItems: 'center', flex: 1 }}>
+            <div className="panel-center">
               <Spin />
             </div>
           ) : (
@@ -302,11 +356,11 @@ function Root() {
               activeKey={tab}
               onChange={setTab}
               style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}
-              tabBarStyle={{ padding: '0 16px', marginBottom: 0 }}
+              tabBarStyle={{ padding: '0 20px', marginBottom: 0 }}
               items={[
                 {
                   key: 'explore',
-                  label: t('explore.tab', { city: trip.city.name }),
+                  label: t('explore.tab'),
                   children: (
                     <ExplorePanel
                       pois={pois}
@@ -326,7 +380,7 @@ function Root() {
                 },
                 {
                   key: 'plan',
-                  label: t('plan.tab', { count: trip.plannedCount }),
+                  label: t('plan.tab'),
                   children: (
                     <ItineraryPanel
                       trip={trip}
@@ -378,11 +432,38 @@ function Root() {
   );
 }
 
-function TripSettings({ trip, onChange }) {
+/**
+ * The design merges the trip picker into this popover: the top bar carries one control, so switching
+ * trips lives next to the settings for the trip it switches away from.
+ */
+function TripSettings({ trip, trips, onOpenTrip, onChange }) {
   const { t } = useI18n();
   return (
-    <div style={{ width: 250 }}>
-      <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{t('settings.length')}</div>
+    <div style={{ width: 260 }}>
+      {trips.length > 1 && (
+        <>
+          <div className="panel-note">{t('settings.switch')}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, margin: '6px 0 0' }}>
+            {trips
+              .filter((item) => item.id !== trip.id)
+              .map((item) => (
+                <Button key={item.id} type="text" block onClick={() => onOpenTrip(item.id)}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                    <span>{item.heroEmoji}</span>
+                    <span style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                      <span className="trip-control-title">{item.title}</span>
+                      <span className="trip-control-meta">
+                        {t('top.tripOption', { days: item.numDays, stops: item.plannedCount })}
+                      </span>
+                    </span>
+                  </span>
+                </Button>
+              ))}
+          </div>
+          <Divider style={{ margin: '10px 0' }} />
+        </>
+      )}
+      <div className="panel-note">{t('settings.length')}</div>
       <Slider
         min={1}
         max={15}
@@ -390,7 +471,7 @@ function TripSettings({ trip, onChange }) {
         marks={{ 1: '1', 8: '8', 15: '15' }}
         onChangeComplete={(v) => onChange({ numDays: v })}
       />
-      <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{t('settings.dayStart')}</div>
+      <div className="panel-note">{t('settings.dayStart')}</div>
       <Slider
         min={6}
         max={12}
@@ -398,7 +479,7 @@ function TripSettings({ trip, onChange }) {
         marks={{ 6: '6:00', 9: '9:00', 12: '12:00' }}
         onChangeComplete={(v) => onChange({ dayStartHour: v })}
       />
-      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+      <div className="panel-note" style={{ lineHeight: 1.5 }}>
         {t('settings.shrinkNote')}
       </div>
     </div>
