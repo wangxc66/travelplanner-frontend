@@ -1,7 +1,7 @@
 # TripCanvas — frontend
 
 Plan a city trip day by day, on one screen: search places, drop them on the map, drag them between
-days, and let the planner reorder each day for you. This repository is the UI; the service it talks to
+days, and let the planner reorder each day. This repository is the UI; the service it talks to
 is **[travelplanner](https://github.com/wangxc66/travelplanner)** — start that first.
 
 React single-page planner. Same stack shape as the staybooking / twitch / nextai frontends: Create
