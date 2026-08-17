@@ -8,7 +8,7 @@ import ItineraryPanel from './components/ItineraryPanel';
 import LanguageSwitch from './components/LanguageSwitch';
 import NewTripModal from './components/NewTripModal';
 import MapCanvas from './components/map/MapCanvas';
-import { I18nProvider, useI18n } from './i18n';
+import { autoNamedIn, defaultTripTitle, I18nProvider, useI18n } from './i18n';
 
 const THEME = {
   token: {
@@ -217,6 +217,28 @@ function Root() {
       return updated;
     });
 
+  /**
+   * A trip the traveller never named carries the day count in its title ("3 days in San Francisco").
+   * Changing the length from the top bar has to carry the title along, or the two disagree; a title
+   * the traveller typed themselves is left exactly as it is.
+   */
+  const updateSettings = (body) => {
+    const patch = { ...body };
+    if (body.numDays && body.numDays !== trip.numDays) {
+      const namedIn = autoNamedIn(trip.title, trip.numDays, trip.city.name);
+      if (namedIn) {
+        patch.title = defaultTripTitle(namedIn, body.numDays, trip.city.name);
+      }
+    }
+    return apply('settings', async () => {
+      const updated = await api.updateTrip(trip.id, patch);
+      if (patch.title) {
+        setTrips(await api.trips());
+      }
+      return updated;
+    });
+  };
+
   const applySuggestion = (suggestion) => {
     if (suggestion.kind === 'REBALANCE' && suggestion.itemId) {
       return apply('suggestion', () =>
@@ -272,7 +294,7 @@ function Root() {
                 trip={trip}
                 trips={trips}
                 onOpenTrip={openTrip}
-                onChange={(body) => apply('settings', () => api.updateTrip(trip.id, body))}
+                onChange={updateSettings}
               />
             }
           >

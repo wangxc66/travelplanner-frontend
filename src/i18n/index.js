@@ -37,6 +37,20 @@ function fill(template, params) {
   );
 }
 
+/** The name NewTripModal gives a trip when the traveller leaves the field blank. */
+export function defaultTripTitle(lang, days, city) {
+  return fill(DICTIONARIES[lang]['newTrip.defaultTitle'], { days, city });
+}
+
+/**
+ * Which language's auto-naming template produced `title` — or null if the traveller typed their own.
+ * Checked across every dictionary because the trip may have been created before the language was
+ * switched, and "San Francisco 3 天" is just as auto-generated as "3 days in San Francisco".
+ */
+export function autoNamedIn(title, days, city) {
+  return Object.keys(DICTIONARIES).find((lang) => defaultTripTitle(lang, days, city) === title) ?? null;
+}
+
 const I18nContext = createContext(null);
 
 export function I18nProvider({ children }) {
