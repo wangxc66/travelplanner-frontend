@@ -10,7 +10,17 @@ import {
 } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Alert, Button, Dropdown, Segmented, Space, Tooltip } from 'antd';
+import { Alert, Button, Dropdown, Segmented, Tooltip } from 'antd';
+import {
+  ArrowDownOutlined,
+  CloseOutlined,
+  ExclamationCircleOutlined,
+  MoreOutlined,
+  PushpinFilled,
+  PushpinOutlined,
+  SwapOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { categoryStyle, formatMinutes, lyftLink, MODES, uberLink } from '../constants';
 import { useI18n } from '../i18n';
@@ -19,24 +29,26 @@ function DayPill({ day, active, onSelect }) {
   const { t } = useI18n();
   const { setNodeRef, isOver } = useDroppable({ id: `day-${day.dayIndex}` });
   const over = day.loadPercent > 100;
-  // The server sends an ISO date; dayjs renders the weekday in the active locale.
-  const weekday = day.date ? dayjs(day.date).format('ddd') : null;
+  // 84px leaves no room for the date, so it moves into the tooltip rather than off the screen.
+  // The server sends an ISO date; dayjs renders it in the active locale.
+  const date = day.date ? dayjs(day.date).format('ddd, MMM D') : null;
   return (
-    <button
-      ref={setNodeRef}
-      className={`day-pill${active ? ' active' : ''}${isOver ? ' drop-target' : ''}`}
-      onClick={() => onSelect(day.dayIndex)}
-      type="button"
-    >
-      <div className="day-pill-title">{t('plan.day', { day: day.dayIndex })}</div>
-      <div className="day-pill-sub">
-        {weekday ? `${weekday} · ` : ''}
-        {day.items.length === 1 ? t('plan.stops_one') : t('plan.stops', { count: day.items.length })}
-      </div>
-      <div className={`load-bar${over ? ' over' : ''}`}>
-        <span style={{ width: `${Math.min(100, day.loadPercent)}%` }} />
-      </div>
-    </button>
+    <Tooltip title={date}>
+      <button
+        ref={setNodeRef}
+        className={`day-pill${active ? ' active' : ''}${isOver ? ' drop-target' : ''}`}
+        onClick={() => onSelect(day.dayIndex)}
+        type="button"
+      >
+        <div className="day-pill-title">{t('plan.day', { day: day.dayIndex })}</div>
+        <div className="day-pill-sub">
+          {day.items.length === 1 ? t('plan.stops_one') : t('plan.stops', { count: day.items.length })}
+        </div>
+        <div className={`load-bar${over ? ' over' : ''}`}>
+          <span style={{ width: `${Math.min(100, day.loadPercent)}%` }} />
+        </div>
+      </button>
+    </Tooltip>
   );
 }
 
@@ -47,13 +59,14 @@ function Leg({ item, prevPoi }) {
   const to = { lat: item.poi.lat, lng: item.poi.lng, name: item.poi.name };
   return (
     <div className="leg">
+      <ArrowDownOutlined />
       <span>
         {t('plan.leg', { minutes: item.travelMinutesFromPrev, km: item.travelKmFromPrev })}
       </span>
       <a href={uberLink(from, to)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
         Uber
       </a>
-      <span style={{ color: '#cbd5e1' }}>/</span>
+      <span style={{ color: 'var(--map-rail)' }}>·</span>
       <a href={lyftLink(from, to)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
         Lyft
       </a>
@@ -61,7 +74,7 @@ function Leg({ item, prevPoi }) {
   );
 }
 
-function StopRow({ item, index, prevPoi, days, activeDay, onFocus, onRemove, onLock, onMove }) {
+function StopRow({ item, index, total, prevPoi, days, activeDay, onFocus, onRemove, onLock, onMove }) {
   const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `item-${item.id}`,
@@ -80,18 +93,21 @@ function StopRow({ item, index, prevPoi, days, activeDay, onFocus, onRemove, onL
     <div ref={setNodeRef} style={style}>
       <Leg item={item} prevPoi={prevPoi} />
       <div className={`stop${isDragging ? ' dragging' : ''}`} onClick={() => onFocus(item.poi)}>
-        <span className="drag-handle" {...attributes} {...listeners} onClick={(e) => e.stopPropagation()}>
-          ⠿
-        </span>
-        <span className="stop-index" style={{ background: cat.color }}>
-          {index + 1}
+        {/* The numbered badge is the drag affordance — the design drops the separate ⠿ handle. */}
+        <span
+          className={`stop-rail${index === 0 ? ' is-first' : ''}${index === total - 1 ? ' is-last' : ''}`}
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="stop-index" style={{ background: cat.color }}>
+            {index + 1}
+          </span>
         </span>
         <div className="stop-body">
-          <div className="poi-name" style={{ justifyContent: 'space-between' }}>
-            <span>
-              {item.locked && '📌 '}
-              {item.poi.name}
-            </span>
+          <div className="stop-name">
+            {item.locked && <PushpinFilled />}
+            <span>{item.poi.name}</span>
           </div>
           <div className="stop-time">
             {item.arriveTime} – {item.leaveTime} ·{' '}
@@ -99,27 +115,26 @@ function StopRow({ item, index, prevPoi, days, activeDay, onFocus, onRemove, onL
           </div>
           {item.warnings.map((w) => (
             <div className="warn-line" key={w.code}>
-              ⚠️ {t(w.code, w.params)}
+              <ExclamationCircleOutlined /> {t(w.code, w.params)}
             </div>
           ))}
         </div>
         <div className="stop-actions" onClick={(e) => e.stopPropagation()}>
           <Tooltip title={item.locked ? t('plan.unpin') : t('plan.pin')}>
-            <Button type="text" size="small" onClick={() => onLock(item)}>
-              {item.locked ? '📌' : '📎'}
-            </Button>
+            <Button
+              type="text"
+              size="small"
+              icon={item.locked ? <PushpinFilled /> : <PushpinOutlined />}
+              onClick={() => onLock(item)}
+            />
           </Tooltip>
           {days.length > 1 && (
             <Dropdown menu={moveMenu} trigger={['click']}>
-              <Button type="text" size="small">
-                ⋯
-              </Button>
+              <Button type="text" size="small" icon={<MoreOutlined />} />
             </Dropdown>
           )}
           <Tooltip title={t('plan.remove')}>
-            <Button type="text" size="small" danger onClick={() => onRemove(item)}>
-              ✕
-            </Button>
+            <Button type="text" size="small" danger icon={<CloseOutlined />} onClick={() => onRemove(item)} />
           </Tooltip>
         </div>
       </div>
@@ -180,33 +195,48 @@ export default function ItineraryPanel({
             <DayPill key={d.dayIndex} day={d} active={d.dayIndex === activeDay} onSelect={onActiveDay} />
           ))}
         </div>
-        <Space size={6} wrap style={{ marginBottom: 4 }}>
+        <div className="plan-controls">
           <Segmented
             size="small"
             value={trip.defaultMode}
             onChange={onModeChange}
-            options={MODES.map((m) => ({ value: m.value, label: `${m.icon} ${t(`mode.${m.value}`)}` }))}
+            options={MODES.map((m) => ({ value: m.value, label: t(`mode.${m.value}`) }))}
           />
           <Tooltip title={t('plan.optimizeHint')}>
-            <Button size="small" type="primary" loading={busy === 'optimize'} onClick={() => onOptimizeDay(activeDay)}>
+            <Button
+              size="small"
+              type="primary"
+              icon={<ThunderboltOutlined />}
+              style={{ height: 28 }}
+              loading={busy === 'optimize'}
+              onClick={() => onOptimizeDay(activeDay)}
+            >
               {t('plan.optimize')}
             </Button>
           </Tooltip>
-          <Tooltip title={t('plan.rebalanceHint')}>
-            <Button size="small" loading={busy === 'rebalance'} onClick={onRebalance}>
-              {t('plan.rebalance')}
-            </Button>
-          </Tooltip>
-        </Space>
+        </div>
       </div>
 
       <div className="panel-scroll">
+        {/* Trip-wide, so it sits with the list rather than in the day-scoped header. */}
+        <Tooltip title={t('plan.rebalanceHint')}>
+          <Button
+            size="small"
+            icon={<SwapOutlined />}
+            style={{ height: 28, marginBottom: 10 }}
+            loading={busy === 'rebalance'}
+            onClick={onRebalance}
+          >
+            {t('plan.rebalance')}
+          </Button>
+        </Tooltip>
+
         {trip.suggestions.map((s, i) => (
           <Alert
             key={`${s.kind}-${s.code}-${i}`}
             type={s.kind === 'EMPTY_DAY' ? 'info' : 'warning'}
             showIcon
-            style={{ marginBottom: 8, fontSize: 12 }}
+            style={{ marginBottom: 12, fontSize: 12 }}
             message={suggestionText(s)}
             action={
               s.kind === 'REBALANCE' ? (
@@ -235,6 +265,7 @@ export default function ItineraryPanel({
                 key={item.id}
                 item={item}
                 index={index}
+                total={items.length}
                 prevPoi={index > 0 ? items[index - 1].poi : null}
                 days={trip.days}
                 activeDay={activeDay}
@@ -246,30 +277,31 @@ export default function ItineraryPanel({
             ))}
           </SortableContext>
         )}
-
-        {items.length > 0 && (
-          <div className="day-summary">
-            <div>
-              <b>
-                {day.startTime} → {day.endTime}
-              </b>
-              {t('plan.dayWindow')}
-            </div>
-            <div>
-              <b>{formatMinutes(day.visitMinutes, t)}</b>
-              {t('plan.atStops')}
-            </div>
-            <div>
-              <b>{formatMinutes(day.travelMinutes, t)}</b>
-              {t('plan.onTheMove')}
-            </div>
-            <div>
-              <b>{day.loadPercent}%</b>
-              {t('plan.dayUsed')}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Pinned below the scroll area: the day's totals are a status bar, not the tail of the list. */}
+      {items.length > 0 && (
+        <div className="day-summary">
+          <div>
+            <b>
+              {day.startTime} → {day.endTime}
+            </b>
+            <span>{t('plan.dayWindow')}</span>
+          </div>
+          <div>
+            <b>{formatMinutes(day.visitMinutes, t)}</b>
+            <span>{t('plan.atStops')}</span>
+          </div>
+          <div>
+            <b>{formatMinutes(day.travelMinutes, t)}</b>
+            <span>{t('plan.onTheMove')}</span>
+          </div>
+          <div>
+            <b>{day.loadPercent}%</b>
+            <span>{t('plan.dayUsed')}</span>
+          </div>
+        </div>
+      )}
     </DndContext>
   );
 }

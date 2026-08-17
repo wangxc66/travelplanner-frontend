@@ -43,11 +43,13 @@ estimates.
 Everything happens on one screen, because the point of the product is the loop between searching,
 placing and looking at the map:
 
-1. **Explore** — search the POI database for the trip's city, filter by category, `+ Day N` to plan it.
-2. **Itinerary** — day pills with a load bar each, drag to reorder inside a day, drag onto another
-   day's pill to move it there, pin (📌) a stop so Optimize leaves it alone.
-3. **⚡ Optimize day** — reorders the day for the shortest route that still respects opening hours.
-4. **⚖ Rebalance trip** — moves stops off days that overflow onto days that have room.
+1. **Explore** — search the POI database for the trip's city, filter by the category chips, **Add**
+   to drop a place onto the day you are building.
+2. **Itinerary** — a timeline of the day: day tabs with a load bar each, drag a stop's numbered
+   badge to reorder inside a day, drag it onto another day's tab to move it there, pin a stop so
+   Optimize leaves it alone.
+3. **Optimize** — reorders the day for the shortest route that still respects opening hours.
+4. **Rebalance** — moves stops off days that overflow onto days that have room.
 5. Each leg shows its travel time and distance, plus Uber / Lyft deep links for that exact hop.
 
 ## Languages

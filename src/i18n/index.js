@@ -28,6 +28,15 @@ function initialLanguage() {
   return preferred ? 'zh' : 'en';
 }
 
+function fill(template, params) {
+  if (!params) {
+    return template;
+  }
+  return String(template).replace(/\{(\w+)\}/g, (whole, name) =>
+    params[name] === undefined ? whole : String(params[name]),
+  );
+}
+
 const I18nContext = createContext(null);
 
 export function I18nProvider({ children }) {
@@ -53,12 +62,7 @@ export function I18nProvider({ children }) {
         fallback ??
         DICTIONARIES[lang === 'zh' ? 'en' : 'zh'][key] ??
         key;
-      if (!params) {
-        return template;
-      }
-      return String(template).replace(/\{(\w+)\}/g, (whole, name) =>
-        params[name] === undefined ? whole : String(params[name]),
-      );
+      return fill(template, params);
     },
     [lang],
   );
