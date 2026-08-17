@@ -274,17 +274,36 @@ body {
 /* ---------------- category chips ---------------- */
 
 /* Eight categories never fit on 352px, so the strip scrolls sideways rather than wrapping into a
-   second row that would push the list down. */
+   second row that would push the list down. The scrollbar is left visible: without it there is
+   nothing to say the row continues past the right edge. */
 .chip-row {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 2px;
+  overscroll-behavior-x: contain;
+  /* Chromium honours scrollbar-width/-color over the ::-webkit- rules when both are set; those are
+     kept below for browsers that only understand the older syntax. */
+  scrollbar-width: thin;
+  scrollbar-color: #d0d6e2 var(--bg-load-track);
+  padding-bottom: 8px;
 }
 
 .chip-row::-webkit-scrollbar {
-  display: none;
+  height: 6px;
+}
+
+.chip-row::-webkit-scrollbar-track {
+  background: var(--bg-load-track);
+  border-radius: var(--radius-pill);
+}
+
+.chip-row::-webkit-scrollbar-thumb {
+  background: #d0d6e2;
+  border-radius: var(--radius-pill);
+}
+
+.chip-row::-webkit-scrollbar-thumb:hover {
+  background: var(--map-rail);
 }
 
 .chip {
@@ -526,11 +545,6 @@ body {
   width: 28px;
   flex: none;
   align-self: stretch;
-  cursor: grab;
-}
-
-.stop-rail:active {
-  cursor: grabbing;
 }
 
 .stop-rail::before {
@@ -618,6 +632,80 @@ body {
   width: 28px;
   height: 28px;
   border-radius: var(--radius-control);
+}
+
+/* Reorder mode: the timeline goes back to discrete cards with an explicit handle, so it is obvious
+   which rows can be grabbed and where one stop ends and the next begins. */
+.drag-handle {
+  display: none;
+  align-items: center;
+  align-self: center;
+  flex: none;
+  padding: 2px 1px;
+  color: #c3cad8;
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.stop-list.is-reordering .drag-handle {
+  display: flex;
+}
+
+.stop-list.is-reordering .stop {
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  padding: 10px 12px 10px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  cursor: default;
+}
+
+.stop-list.is-reordering .stop:hover {
+  border-color: var(--accent-soft);
+  background: var(--surface);
+}
+
+.stop-list.is-reordering .stop.dragging {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+/* No rail between cards, and the badge sits inline instead of riding on it. */
+.stop-list.is-reordering .stop-rail::before {
+  display: none;
+}
+
+.stop-list.is-reordering .stop-rail {
+  width: 24px;
+  height: 24px;
+  align-self: flex-start;
+  margin-top: 1px;
+  cursor: default;
+}
+
+.stop-list.is-reordering .stop-index {
+  position: static;
+  transform: none;
+  border: none;
+}
+
+.stop-list.is-reordering .stop-body {
+  padding: 0;
+}
+
+/* Nothing to reveal on hover when the row is already a card. */
+.stop-list.is-reordering .stop-actions {
+  padding-top: 0;
+  opacity: 1;
+}
+
+.stop-list.is-reordering .leg::before {
+  background: repeating-linear-gradient(to bottom, var(--map-rail) 0 3px, transparent 3px 6px);
 }
 
 .leg {

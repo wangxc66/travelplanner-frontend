@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   closestCenter,
   DndContext,
@@ -15,6 +15,7 @@ import {
   ArrowDownOutlined,
   CloseOutlined,
   ExclamationCircleOutlined,
+  HolderOutlined,
   MoreOutlined,
   PushpinFilled,
   PushpinOutlined,
@@ -25,9 +26,9 @@ import dayjs from 'dayjs';
 import { categoryStyle, formatMinutes, lyftLink, MODES, uberLink } from '../constants';
 import { useI18n } from '../i18n';
 
-function DayPill({ day, active, onSelect }) {
+function DayPill({ day, active, reordering, onSelect }) {
   const { t } = useI18n();
-  const { setNodeRef, isOver } = useDroppable({ id: `day-${day.dayIndex}` });
+  const { setNodeRef, isOver } = useDroppable({ id: `day-${day.dayIndex}`, disabled: !reordering });
   const over = day.loadPercent > 100;
   // 84px leaves no room for the date, so it moves into the tooltip rather than off the screen.
   // The server sends an ISO date; dayjs renders it in the active locale.
@@ -74,10 +75,23 @@ function Leg({ item, prevPoi }) {
   );
 }
 
-function StopRow({ item, index, total, prevPoi, days, activeDay, onFocus, onRemove, onLock, onMove }) {
+function StopRow({
+  item,
+  index,
+  total,
+  prevPoi,
+  days,
+  activeDay,
+  reordering,
+  onFocus,
+  onRemove,
+  onLock,
+  onMove,
+}) {
   const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `item-${item.id}`,
+    disabled: !reordering,
   });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 };
   const cat = categoryStyle(item.poi.category);
@@ -93,12 +107,15 @@ function StopRow({ item, index, total, prevPoi, days, activeDay, onFocus, onRemo
     <div ref={setNodeRef} style={style}>
       <Leg item={item} prevPoi={prevPoi} />
       <div className={`stop${isDragging ? ' dragging' : ''}`} onClick={() => onFocus(item.poi)}>
-        {/* The numbered badge is the drag affordance — the design drops the separate ⠿ handle. */}
+        {/* Only reorder mode carries the drag listeners, and only on the handle: with it off the
+            row must not advertise a grab it will not honour, nor take a tab stop for it. */}
+        {reordering && (
+          <span className="drag-handle" {...attributes} {...listeners} onClick={(e) => e.stopPropagation()}>
+            <HolderOutlined />
+          </span>
+        )}
         <span
           className={`stop-rail${index === 0 ? ' is-first' : ''}${index === total - 1 ? ' is-last' : ''}`}
-          {...attributes}
-          {...listeners}
-          onClick={(e) => e.stopPropagation()}
         >
           <span className="stop-index" style={{ background: cat.color }}>
             {index + 1}
@@ -158,6 +175,9 @@ export default function ItineraryPanel({
   busy,
 }) {
   const { t } = useI18n();
+  // Off by default: a plain click on a stop should focus it on the map, and the timeline reads as a
+  // list rather than something you are meant to grab. Turning it on brings back the old card rows.
+  const [reordering, setReordering] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -192,7 +212,13 @@ export default function ItineraryPanel({
       <div className="panel-head">
         <div className="day-strip">
           {trip.days.map((d) => (
-            <DayPill key={d.dayIndex} day={d} active={d.dayIndex === activeDay} onSelect={onActiveDay} />
+            <DayPill
+              key={d.dayIndex}
+              day={d}
+              active={d.dayIndex === activeDay}
+              reordering={reordering}
+              onSelect={onActiveDay}
+            />
           ))}
         </div>
         <div className="plan-controls">
@@ -212,6 +238,16 @@ export default function ItineraryPanel({
               onClick={() => onOptimizeDay(activeDay)}
             >
               {t('plan.optimize')}
+            </Button>
+          </Tooltip>
+          <Tooltip title={t(reordering ? 'plan.reorderOffHint' : 'plan.reorderHint')}>
+            <Button
+              size="small"
+              icon={<HolderOutlined />}
+              style={{ height: 28 }}
+              onClick={() => setReordering((on) => !on)}
+            >
+              {t(reordering ? 'plan.reorderDone' : 'plan.reorder')}
             </Button>
           </Tooltip>
         </div>
@@ -259,23 +295,26 @@ export default function ItineraryPanel({
             {t('plan.emptyDayHint', { day: activeDay })}
           </div>
         ) : (
-          <SortableContext items={items.map((i) => `item-${i.id}`)} strategy={verticalListSortingStrategy}>
-            {items.map((item, index) => (
-              <StopRow
-                key={item.id}
-                item={item}
-                index={index}
-                total={items.length}
-                prevPoi={index > 0 ? items[index - 1].poi : null}
-                days={trip.days}
-                activeDay={activeDay}
-                onFocus={onFocus}
-                onRemove={onRemove}
-                onLock={onLock}
-                onMove={onMove}
-              />
-            ))}
-          </SortableContext>
+          <div className={`stop-list${reordering ? ' is-reordering' : ''}`}>
+            <SortableContext items={items.map((i) => `item-${i.id}`)} strategy={verticalListSortingStrategy}>
+              {items.map((item, index) => (
+                <StopRow
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  total={items.length}
+                  prevPoi={index > 0 ? items[index - 1].poi : null}
+                  days={trip.days}
+                  activeDay={activeDay}
+                  reordering={reordering}
+                  onFocus={onFocus}
+                  onRemove={onRemove}
+                  onLock={onLock}
+                  onMove={onMove}
+                />
+              ))}
+            </SortableContext>
+          </div>
         )}
       </div>
 
