@@ -238,7 +238,7 @@ export default function ItineraryPanel({
             size="small"
             value={trip.defaultMode}
             onChange={onModeChange}
-            options={MODES.map((m) => ({ value: m.value, label: t(`mode.${m.value}`) }))}
+            options={MODES.map((value) => ({ value, label: t(`mode.${value}`) }))}
           />
           <Tooltip title={t('plan.optimizeHint')}>
             <Button

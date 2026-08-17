@@ -14,7 +14,6 @@
   --border-accent-soft: #dbe4ff;
   --route: #ff6b35;
   --warn: #f59e0b;
-  --bg-fill-tertiary: #f5f5f5;
   --bg-card-planned: #f7f9ff;
   --bg-summary: #f7f9fc;
   --bg-load-track: #eef1f6;
@@ -154,19 +153,6 @@ body {
   flex: none;
   color: var(--ink-soft);
   font-size: 12px;
-}
-
-/* Two lines in a dropdown row, same shape as the trigger. */
-.trip-option-title {
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 600;
-}
-
-.trip-option-meta {
-  font-size: 11px;
-  line-height: 16px;
-  color: var(--ink-soft);
 }
 
 .topbar-spacer {

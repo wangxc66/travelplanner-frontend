@@ -29,7 +29,7 @@ export const categoryStyle = (category) =>
   CATEGORY_STYLE[category] || { color: '#94a3b8', Icon: PushpinOutlined };
 
 /** Labels come from the dictionary via `t('mode.' + value)`. */
-export const MODES = [{ value: 'WALK' }, { value: 'TRANSIT' }, { value: 'DRIVE' }];
+export const MODES = ['WALK', 'TRANSIT', 'DRIVE'];
 
 export const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
 
