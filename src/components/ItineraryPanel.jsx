@@ -83,6 +83,7 @@ function StopRow({
   days,
   activeDay,
   reordering,
+  busy,
   onFocus,
   onRemove,
   onLock,
@@ -136,22 +137,33 @@ function StopRow({
             </div>
           ))}
         </div>
+        {/* Every one of these swaps the whole trip for the one the server returns, so a second
+            click before that lands would act on a stop that is already gone — and this backend
+            answers a lost race with a bare 403. Shut the row down until the change comes back. */}
         <div className="stop-actions" onClick={(e) => e.stopPropagation()}>
           <Tooltip title={item.locked ? t('plan.unpin') : t('plan.pin')}>
             <Button
               type="text"
               size="small"
+              disabled={!!busy}
               icon={item.locked ? <PushpinFilled /> : <PushpinOutlined />}
               onClick={() => onLock(item)}
             />
           </Tooltip>
           {days.length > 1 && (
-            <Dropdown menu={moveMenu} trigger={['click']}>
-              <Button type="text" size="small" icon={<MoreOutlined />} />
+            <Dropdown menu={moveMenu} trigger={['click']} disabled={!!busy}>
+              <Button type="text" size="small" disabled={!!busy} icon={<MoreOutlined />} />
             </Dropdown>
           )}
           <Tooltip title={t('plan.remove')}>
-            <Button type="text" size="small" danger icon={<CloseOutlined />} onClick={() => onRemove(item)} />
+            <Button
+              type="text"
+              size="small"
+              danger
+              disabled={!!busy}
+              icon={<CloseOutlined />}
+              onClick={() => onRemove(item)}
+            />
           </Tooltip>
         </div>
       </div>
@@ -276,7 +288,12 @@ export default function ItineraryPanel({
             message={suggestionText(s)}
             action={
               s.kind === 'REBALANCE' ? (
-                <Button size="small" type="link" onClick={() => onApplySuggestion(s)}>
+                <Button
+                  size="small"
+                  type="link"
+                  loading={busy === 'suggestion'}
+                  onClick={() => onApplySuggestion(s)}
+                >
                   {t('plan.suggestionDo')}
                 </Button>
               ) : s.kind === 'EMPTY_DAY' ? (
@@ -307,6 +324,7 @@ export default function ItineraryPanel({
                   days={trip.days}
                   activeDay={activeDay}
                   reordering={reordering}
+                  busy={busy}
                   onFocus={onFocus}
                   onRemove={onRemove}
                   onLock={onLock}

@@ -24,14 +24,42 @@ export function setUnauthorizedHandler(handler) {
   onUnauthorized = handler;
 }
 
+const isRejected = (status) => status === 401 || status === 403;
+
+/**
+ * The server answers every auth failure with a bare 403 — no token, a malformed one, and a
+ * well-signed token for a user the in-memory database no longer has are indistinguishable. But a
+ * plain lost race answers 403 too (delete the same stop twice and the second one gets it), and
+ * throwing the traveller back to the sign-in screen over that loses their place for nothing.
+ *
+ * So a 403 is checked against the session before anything is discarded. One probe at a time: a
+ * burst of doomed requests must not turn into a burst of probes.
+ */
+let runningProbe = null;
+
+function sessionIsGone() {
+  if (!runningProbe) {
+    runningProbe = client
+      .get('/api/trips', { sessionProbe: true })
+      .then(() => false)
+      .catch((error) => isRejected(error?.response?.status))
+      .finally(() => {
+        runningProbe = null;
+      });
+  }
+  return runningProbe;
+}
+
 client.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const status = error?.response?.status;
-    const isAuthCall = (error?.config?.url || '').startsWith('/auth/');
-    if ((status === 401 || status === 403) && !isAuthCall) {
-      session.clear();
-      onUnauthorized();
+  async (error) => {
+    const config = error?.config || {};
+    const isAuthCall = (config.url || '').startsWith('/auth/');
+    if (isRejected(error?.response?.status) && !isAuthCall && !config.sessionProbe) {
+      if (await sessionIsGone()) {
+        session.clear();
+        onUnauthorized();
+      }
     }
     return Promise.reject(error);
   },

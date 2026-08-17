@@ -11,6 +11,12 @@ const stopIcon = (label) =>
     iconAnchor: [13, 24],
   });
 
+/** The category map holds an icon component; Leaflet tooltips render React children fine. */
+function CategoryIcon({ category }) {
+  const { color, Icon } = categoryStyle(category);
+  return <Icon style={{ color }} />;
+}
+
 const candidateIcon = (color) =>
   L.divIcon({
     className: 'cand-pin',
@@ -31,16 +37,20 @@ function ViewController({ center, zoom, bounds, fitKey, focus }) {
     return () => observer.disconnect();
   }, [map]);
 
+  // None of the view changes below animate. A zoom transition ends on a bare setTimeout that
+  // nothing can clear, so if the pane is torn down mid-flight — signing out, or the trip going away
+  // underneath us — the callback reads a pane Leaflet has already dropped and throws where nothing
+  // can catch it. (flyTo is safe: it runs on a frame loop that Leaflet cancels in map.remove().)
   useEffect(() => {
-    map.setView([center.lat, center.lng], zoom);
+    map.setView([center.lat, center.lng], zoom, { animate: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center.lat, center.lng]);
 
   useEffect(() => {
     if (bounds && bounds.length > 1) {
-      map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15 });
+      map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15, animate: false });
     } else if (bounds && bounds.length === 1) {
-      map.setView(bounds[0], 14);
+      map.setView(bounds[0], 14, { animate: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey]);
@@ -84,7 +94,7 @@ export default function OsmMapCanvas({ center, zoom, stops, candidates, focus, o
           eventHandlers={{ click: () => onPoiClick?.(poi) }}
         >
           <Tooltip direction="top" offset={[0, -6]}>
-            {categoryStyle(poi.category).icon} {poi.name}
+            <CategoryIcon category={poi.category} /> {poi.name}
           </Tooltip>
         </Marker>
       ))}
