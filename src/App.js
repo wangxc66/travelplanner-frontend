@@ -1,7 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { App as AntApp, Button, ConfigProvider, Divider, Dropdown, Popover, Slider, Spin, Tabs } from 'antd';
 import { CompassOutlined, DownOutlined, PlusOutlined, UserOutlined } from '@ant-design/icons';
-import { api, errorNotice, session, setUnauthorizedHandler } from './api';
+import {
+  addItem,
+  createTrip as createTripApi,
+  errorNotice,
+  getCategories,
+  getCities,
+  getTrip,
+  getTrips,
+  moveItem,
+  optimizeDay as optimizeDayApi,
+  rebalance as rebalanceApi,
+  removeItem,
+  reorderDay,
+  searchPois,
+  session,
+  setUnauthorizedHandler,
+  toggleLock,
+  updateTrip,
+} from './utils';
 import AuthPage from './components/AuthPage';
 import ExplorePanel from './components/ExplorePanel';
 import ItineraryPanel from './components/ItineraryPanel';
@@ -84,7 +102,7 @@ function Root() {
   // ---------- bootstrapping ----------
 
   useEffect(() => {
-    api.cities().then(setCities).catch(fail);
+    getCities().then(setCities).catch(fail);
   }, [fail]);
 
   // A token for a user the backend no longer knows (in-memory dev database, restarted) must not leave
@@ -102,7 +120,7 @@ function Root() {
     async (tripId) => {
       setLoadingTrip(true);
       try {
-        const detail = await api.trip(tripId);
+        const detail = await getTrip(tripId);
         setTrip(detail);
         setActiveDay((day) => Math.min(day, detail.numDays));
       } catch (e) {
@@ -116,7 +134,7 @@ function Root() {
 
   const refreshTrips = useCallback(
     async (preferId) => {
-      const list = await api.trips();
+      const list = await getTrips();
       setTrips(list);
       const target = preferId || list[0]?.id;
       if (target) {
@@ -143,7 +161,7 @@ function Root() {
 
   useEffect(() => {
     if (!cityId) return;
-    api.categories(cityId).then(setCategories).catch(() => setCategories([]));
+    getCategories(cityId).then(setCategories).catch(() => setCategories([]));
   }, [cityId]);
 
   useEffect(() => {
@@ -151,8 +169,7 @@ function Root() {
     setPoiLoading(true);
     clearTimeout(debounce.current);
     debounce.current = setTimeout(() => {
-      api
-        .pois(cityId, { keyword, category })
+      searchPois(cityId, { keyword, category })
         .then(setPois)
         .catch(fail)
         .finally(() => setPoiLoading(false));
@@ -201,7 +218,7 @@ function Root() {
   const addPoi = async (poi) => {
     setAdding(poi.id);
     try {
-      setTrip(await api.addItem(trip.id, { poiId: poi.id, dayIndex: activeDay }));
+      setTrip(await addItem(trip.id, { poiId: poi.id, dayIndex: activeDay }));
       message.success(t('plan.added', { name: poi.name, day: activeDay }));
       setFocus(poi);
     } catch (e) {
@@ -214,7 +231,7 @@ function Root() {
   const optimizeDay = (dayIndex) =>
     apply('optimize', async () => {
       const before = day?.travelMinutes ?? 0;
-      const updated = await api.optimizeDay(trip.id, dayIndex);
+      const updated = await optimizeDayApi(trip.id, dayIndex);
       const after = updated.days.find((d) => d.dayIndex === dayIndex)?.travelMinutes ?? 0;
       message.success(
         after < before
@@ -226,7 +243,7 @@ function Root() {
 
   const rebalance = () =>
     apply('rebalance', async () => {
-      const updated = await api.rebalance(trip.id);
+      const updated = await rebalanceApi(trip.id);
       message.success(t('plan.rebalanced'));
       return updated;
     });
@@ -245,9 +262,9 @@ function Root() {
       }
     }
     return apply('settings', async () => {
-      const updated = await api.updateTrip(trip.id, patch);
+      const updated = await updateTrip(trip.id, patch);
       if (patch.title) {
-        setTrips(await api.trips());
+        setTrips(await getTrips());
       }
       return updated;
     });
@@ -256,7 +273,7 @@ function Root() {
   const applySuggestion = (suggestion) => {
     if (suggestion.kind === 'REBALANCE' && suggestion.itemId) {
       return apply('suggestion', () =>
-        api.moveItem(trip.id, suggestion.itemId, { dayIndex: suggestion.toDay, seq: null }),
+        moveItem(trip.id, suggestion.itemId, { dayIndex: suggestion.toDay, seq: null }),
       );
     }
     return undefined;
@@ -264,12 +281,12 @@ function Root() {
 
   const createTrip = async (body) => {
     try {
-      const created = await api.createTrip(body);
+      const created = await createTripApi(body);
       setTrip(created);
       setActiveDay(1);
       setTab('explore');
       setNewTripOpen(false);
-      setTrips(await api.trips());
+      setTrips(await getTrips());
     } catch (e) {
       fail(e);
     }
@@ -388,15 +405,15 @@ function Root() {
                       onActiveDay={setActiveDay}
                       busy={busy}
                       onFocus={setFocus}
-                      onReorder={(ids) => apply('reorder', () => api.reorderDay(trip.id, activeDay, ids))}
+                      onReorder={(ids) => apply('reorder', () => reorderDay(trip.id, activeDay, ids))}
                       onMove={(item, dayIndex) =>
-                        apply('move', () => api.moveItem(trip.id, item.id, { dayIndex, seq: null }))
+                        apply('move', () => moveItem(trip.id, item.id, { dayIndex, seq: null }))
                       }
-                      onRemove={(item) => apply('remove', () => api.removeItem(trip.id, item.id))}
-                      onLock={(item) => apply('lock', () => api.toggleLock(trip.id, item.id))}
+                      onRemove={(item) => apply('remove', () => removeItem(trip.id, item.id))}
+                      onLock={(item) => apply('lock', () => toggleLock(trip.id, item.id))}
                       onOptimizeDay={optimizeDay}
                       onRebalance={rebalance}
-                      onModeChange={(mode) => apply('mode', () => api.updateTrip(trip.id, { defaultMode: mode }))}
+                      onModeChange={(mode) => apply('mode', () => updateTrip(trip.id, { defaultMode: mode }))}
                       onApplySuggestion={applySuggestion}
                     />
                   ),

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Button, Form, Input, Segmented } from 'antd';
 import { CompassOutlined } from '@ant-design/icons';
-import { api, errorNotice, session } from '../api';
+import { errorNotice, login, register, session } from '../utils';
 import { useI18n } from '../i18n';
 import LanguageSwitch from './LanguageSwitch';
 
@@ -16,7 +16,7 @@ export default function AuthPage({ onAuthenticated }) {
     setLoading(true);
     setError(null);
     try {
-      const auth = mode === 'signIn' ? await api.login(values) : await api.register(values);
+      const auth = mode === 'signIn' ? await login(values) : await register(values);
       session.save(auth);
       onAuthenticated(auth);
     } catch (e) {
