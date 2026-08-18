@@ -24,3 +24,6 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Claude Code 的本地工具配置，因人而异
+.claude/
