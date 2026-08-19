@@ -16,6 +16,48 @@ npm install && npm start
 Opens `http://localhost:3000`. Start the backend first — `/api` and `/auth` are proxied to `:8080`.
 Create an account with any username; the New trip dialog opens by itself when you have no trips yet.
 
+## AI relay
+
+The browser never receives the OpenAI API key. A small Node relay on port `5001` reads the key on the
+server and exposes only `POST /api/ai/chat`. Use a Node.js version matching
+`^22.15.0 || ^24.0.0 || >=26.0.0`, then install both package sets:
+
+```bash
+npm install
+npm --prefix server install
+cp server/.env.example server/.env
+```
+
+Create a personal key in the [OpenAI API dashboard](https://platform.openai.com/api-keys), then set it
+only in `server/.env`:
+
+```dotenv
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-5.5
+HOST=127.0.0.1
+PORT=5001
+```
+
+Fill in `OPENAI_API_KEY` locally; never add a `REACT_APP_` OpenAI key. `server/.env` is ignored by Git,
+while `server/.env.example` deliberately keeps the key empty. Hosted deployments should provide the
+API key through the hosting platform's Secret settings; `HOST`, `PORT`, and `OPENAI_MODEL` are ordinary
+environment configuration. Each developer uses their own key.
+
+The relay listens on `127.0.0.1` by default. A platform or container that sends inbound traffic
+directly to the relay should set `HOST=0.0.0.0`; a same-host reverse proxy can keep the loopback
+default. The relay rejects request bodies larger than 1 MiB with HTTP `413`. Public deployment still
+needs platform-level access controls to prevent repeated small requests from consuming API quota.
+
+Start the frontend and AI relay together after starting Spring Boot separately:
+
+```bash
+npm run dev
+```
+
+During development, `/api/ai` is proxied to `http://localhost:5001`; the existing `/api` and `/auth`
+routes remain proxied to Spring Boot at `http://localhost:8080`. If the key is absent, the relay still
+starts and returns an explicit `503` configuration error without exposing any secret.
+
 ## Google Maps
 
 Two independent things need a key, and the badge in the top-right of the map states both:

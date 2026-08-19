@@ -1,0 +1,13 @@
+{
+  "name": "tripcanvas-ai-relay",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test index.test.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "openai": "^7.5.0"
+  }
+}
