@@ -1,6 +1,6 @@
 # AI 助手公共契约
 
-本目录定义模型厂商无关的 AI 助手接缝。当前阶段只建立公共契约，不包含 `executeTool` 的真实 API 实现。
+本目录定义模型厂商无关的 AI 助手接缝。B1 的 `TOOLS`、`executeTool()` 真实实现和测试均已完成。
 
 ## 职责边界
 
@@ -16,7 +16,7 @@
   ```
 
 - `tripId` 永远来自 `ctx.tripId`，不接受模型提供的 `tripId`。
-- 在 `executeTool` 的真实实现完成前，B2 应 Mock `executeTool`。
+- B2 可以直接调用真实 `executeTool()`；单元测试中可按需 Mock。
 
 ## 工具定义
 
@@ -49,6 +49,10 @@ export async function executeTool(name, input, ctx)
 }
 ```
 
+`pois` 必须是当前城市未经关键词或分类筛选的全量 POI，不能直接使用受探索页 `keyword` / `category` 影响的筛选结果。接线方应单独维护全量列表，例如通过 `searchPois(cityId, { keyword: '', category: '' })` 获取。
+
+B1 会在所有工具执行前校验完整 `ctx`；即使工具本身不读取 POI，`pois` 也必须始终是数组。
+
 成功时返回：
 
 ```js
@@ -60,3 +64,5 @@ export async function executeTool(name, input, ctx)
 ```js
 { ok: false, reason: string }
 ```
+
+当前 B1 测试共 `2 suites / 48 tests`，并已通过本地构建与 PR CI。
