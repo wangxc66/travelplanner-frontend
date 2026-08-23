@@ -24,16 +24,14 @@ export function setUnauthorizedHandler(handler) {
   onUnauthorized = handler;
 }
 
-const isRejected = (status) => status === 401 || status === 403;
+// Only 401 means the bearer token is absent/invalid. A 403 is an authorization or browser-boundary
+// failure (for example CORS) and must not erase an otherwise valid session.
+const isRejected = (status) => status === 401;
 
 /**
- * The server answers every auth failure with a bare 403 — no token, a malformed one, and a
- * well-signed token for a user the in-memory database no longer has are indistinguishable. But a
- * plain lost race answers 403 too (delete the same stop twice and the second one gets it), and
- * throwing the traveller back to the sign-in screen over that loses their place for nothing.
- *
- * So a 403 is checked against the session before anything is discarded. One probe at a time: a
- * burst of doomed requests must not turn into a burst of probes.
+ * A protected 401 is checked against the session before anything is discarded. One probe at a time:
+ * a burst of doomed requests must not turn into a burst of probes. A 403 is deliberately excluded:
+ * it does not mean the token expired and must never turn a CORS/configuration error into a sign-out.
  */
 let runningProbe = null;
 
