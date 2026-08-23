@@ -11,6 +11,7 @@ export default function AuthPage({ onAuthenticated }) {
   const [mode, setMode] = useState('register');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const utf8Bytes = (value = '') => new TextEncoder().encode(value).length;
 
   const submit = async (values) => {
     setLoading(true);
@@ -59,19 +60,44 @@ export default function AuthPage({ onAuthenticated }) {
           <Form.Item
             name="username"
             label={t('auth.username')}
-            rules={[{ required: true, message: t('auth.required') }]}
+            rules={[
+              { required: true, message: t('auth.required') },
+              ...(mode === 'register'
+                ? [
+                    { min: 3, max: 64, message: t('auth.usernameRules') },
+                    { pattern: /^[A-Za-z0-9._-]+$/, message: t('auth.usernameRules') },
+                  ]
+                : []),
+            ]}
           >
             <Input size="large" placeholder={t('auth.usernamePlaceholder')} autoComplete="username" />
           </Form.Item>
           {mode === 'register' && (
-            <Form.Item name="displayName" label={t('auth.displayName')}>
+            <Form.Item
+              name="displayName"
+              label={t('auth.displayName')}
+              rules={[{ max: 100, message: t('auth.displayNameRules') }]}
+            >
               <Input size="large" placeholder={t('auth.displayNamePlaceholder')} />
             </Form.Item>
           )}
           <Form.Item
             name="password"
             label={t('auth.password')}
-            rules={[{ required: true, message: t('auth.required') }]}
+            rules={[
+              { required: true, message: t('auth.required') },
+              ...(mode === 'register'
+                ? [
+                    { min: 12, message: t('auth.passwordRules') },
+                    {
+                      validator: (_, value) =>
+                        !value || utf8Bytes(value) <= 72
+                          ? Promise.resolve()
+                          : Promise.reject(new Error(t('auth.passwordRules'))),
+                    },
+                  ]
+                : []),
+            ]}
           >
             <Input.Password
               size="large"
