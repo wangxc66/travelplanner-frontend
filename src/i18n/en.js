@@ -151,6 +151,24 @@ const en = {
   'error.invalidRequest': 'That request was not valid',
   'error.generic': 'Something went wrong',
 
+
+  // AI assistant
+  'assistant.tab': 'Assistant',
+  'assistant.title': 'AI travel assistant',
+  'assistant.subtitle': 'Ask questions about your current itinerary. Read-only for now.',
+  'assistant.placeholder': 'Ask about your trip…',
+  'assistant.send': 'Send',
+  'assistant.thinking': 'Thinking…',
+  'assistant.empty': 'Ask something about your current itinerary.',
+  'assistant.noAnswer': 'I do not have an answer from the current trip data.',
+  'assistant.requestFailed': 'The assistant request failed.',
+  'assistant.notAvailable': 'not available',
+  'assistant.untitledTrip': 'Untitled trip',
+  'assistant.unknownCity': 'Unknown city',
+  'assistant.unknownPlace': 'Unknown place',
+  'assistant.emptyDay': 'No places planned for this day.',
+  'assistant.noUnscheduledPlaces': 'All known places are already planned.',
+
   // durations
   'unit.minutes': '{m}m',
   'unit.hours': '{h}h',
