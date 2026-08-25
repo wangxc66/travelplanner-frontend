@@ -148,6 +148,23 @@ const zh = {
   'error.invalidRequest': '请求不合法',
   'error.generic': '出了点问题',
 
+  // AI 助手
+  'assistant.tab': 'AI 助手',
+  'assistant.title': 'AI 行程助手',
+  'assistant.subtitle': '可以询问当前行程；当前版本只读，不会修改行程。',
+  'assistant.placeholder': '问一个关于行程的问题……',
+  'assistant.send': '发送',
+  'assistant.thinking': '正在思考……',
+  'assistant.empty': '你可以问我当前行程的任何问题。',
+  'assistant.noAnswer': '我无法从当前行程数据中找到答案。',
+  'assistant.requestFailed': 'AI 请求失败。',
+  'assistant.notAvailable': '暂无信息',
+  'assistant.untitledTrip': '未命名行程',
+  'assistant.unknownCity': '未知城市',
+  'assistant.unknownPlace': '未知景点',
+  'assistant.emptyDay': '这一天还没有安排景点。',
+  'assistant.noUnscheduledPlaces': '当前已知景点都已经安排进去了。',
+
   // 时长
   'unit.minutes': '{m} 分钟',
   'unit.hours': '{h} 小时',

@@ -23,6 +23,7 @@ import {
 import AuthPage from './components/AuthPage';
 import ExplorePanel from './components/ExplorePanel';
 import ItineraryPanel from './components/ItineraryPanel';
+import AssistantPanel from './components/AssistantPanel';
 import LanguageSwitch from './components/LanguageSwitch';
 import NewTripModal from './components/NewTripModal';
 import MapCanvas from './components/map/MapCanvas';
@@ -84,6 +85,7 @@ function Root() {
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState('');
   const [pois, setPois] = useState([]);
+  const [assistantPois, setAssistantPois] = useState([]);
   const [categories, setCategories] = useState([]);
   const [poiLoading, setPoiLoading] = useState(false);
   const [focus, setFocus] = useState(null);
@@ -176,6 +178,18 @@ function Root() {
     }, 220);
     return () => clearTimeout(debounce.current);
   }, [cityId, keyword, category, fail]);
+
+   // A2: load the full POI list for the AI Assistant
+useEffect(() => {
+  if (!cityId) {
+    setAssistantPois([]);
+    return;
+  }
+
+  searchPois(cityId, {})
+    .then(setAssistantPois)
+    .catch(() => setAssistantPois([]));
+}, [cityId]);
 
   // ---------- derived ----------
 
@@ -417,6 +431,17 @@ function Root() {
                       onApplySuggestion={applySuggestion}
                     />
                   ),
+                },
+                {
+                   key: 'assistant',
+                   label: t('assistant.tab'),
+                   children: (
+                    <AssistantPanel
+                       trip={trip}
+                       pois={assistantPois}
+                       onTripChange={setTrip}
+                    />
+                   ),
                 },
               ]}
             />
