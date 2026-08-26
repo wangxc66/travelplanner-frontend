@@ -35,7 +35,7 @@ export default function AssistantPanel({ trip, pois, onTripChange }) {
       });
 
       const text = reply?.text || t('assistant.noAnswer');
-      setMessages((current) => [...current, { role: 'assistant', content: text }]);
+      setMessages((current) => [...current, { role: 'assistant', content: text, toolCalls: [] }]);
       if (reply?.toolCalls?.length && onTripChange) {
         // Read-only A2 deliberately ignores tool calls. B2 will own mutations later.
       }
