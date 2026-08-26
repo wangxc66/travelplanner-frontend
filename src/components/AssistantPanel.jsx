@@ -1,57 +1,123 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button, Empty, Input, Spin } from 'antd';
-import { SendOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
+import { RobotOutlined, SendOutlined, UserOutlined } from '@ant-design/icons';
 import { useI18n } from '../i18n';
+import { ask } from '../ai/assistantAsk';
 import { buildContext } from '../ai/context';
 import { buildSystemPrompt } from '../ai/prompts';
-import { ask } from '../ai/assistantAsk';
+import useAssistant from '../ai/useAssistant';
+
+/** Every id the model is allowed to name comes from the trip, so both lookups start there. */
+function findItem(trip, itemId) {
+  for (const day of trip?.days ?? []) {
+    const found = day.items.find((item) => item.id === itemId);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * What the traveller is about to approve, in their own language. The tool layer answers in codes
+ * and ids; a confirmation that reads "add poiId 3 to day 2" asks someone to approve a number.
+ */
+function describeToolCall(call, trip, pois, t) {
+  const place =
+    call.name === 'add_stop'
+      ? pois.find((poi) => poi.id === call.input.poiId)?.name
+      : findItem(trip, call.input.itemId)?.poi?.name;
+  const params = { ...call.input, name: call.name, place: place || t('assistant.thisPlace') };
+  return t(`assistant.tool.${call.name}`, params, t('assistant.tool.unknown', params));
+}
+
+/**
+ * A tool result is JSON on its way back to the model. Only a success is worth a line of its own:
+ * the model answers the next turn holding the failure reason, and a cancellation already has
+ * useAssistant's own message behind it — reporting either here says the same thing twice.
+ */
+function toolNote(message) {
+  try {
+    const result = JSON.parse(message.content);
+    return result?.ok ? result.summary || null : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function AssistantPanel({ trip, pois, onTripChange }) {
   const { t } = useI18n();
-  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const scroller = useRef(null);
 
-  const context = useMemo(() => buildContext(trip, pois, t), [trip, pois, t]);
-  const system = useMemo(() => buildSystemPrompt(context), [context]);
+  const {
+    messages,
+    pendingConfirmation,
+    isLoading,
+    isBusy,
+    error,
+    sendMessage,
+    confirmToolCalls,
+    cancelToolCalls,
+    retry,
+    resetConversation,
+  } = useAssistant({
+    ask,
+    // A function, not a string: after a tool changes the trip the next round has to see the trip
+    // as it is now, or the model reasons about an itinerary that no longer exists.
+    system: (ctx) => buildSystemPrompt(buildContext(ctx.trip, ctx.pois, t)),
+    trip,
+    pois,
+    onTripChange,
+    copy: {
+      cancelled: t('assistant.cancelled'),
+      loopLimit: t('assistant.loopLimit'),
+      missingTrip: t('assistant.missingTrip'),
+    },
+  });
 
-  const sendMessage = async () => {
-    const content = input.trim();
-    if (!content || loading) return;
+  useEffect(() => {
+    const node = scroller.current;
+    if (node) node.scrollTop = node.scrollHeight;
+  }, [messages, pendingConfirmation, isLoading]);
 
-    const userMessage = { role: 'user', content };
-    const nextMessages = [...messages, userMessage];
-    setMessages(nextMessages);
-    setInput('');
-    setError(null);
-    setLoading(true);
-
-    try {
-      const reply = await ask({
-        system,
-        messages: nextMessages,
-        tools: [],
-      });
-
-      const text = reply?.text || t('assistant.noAnswer');
-      setMessages((current) => [...current, { role: 'assistant', content: text, toolCalls: [] }]);
-      if (reply?.toolCalls?.length && onTripChange) {
-        // Read-only A2 deliberately ignores tool calls. B2 will own mutations later.
-      }
-    } catch (e) {
-      setError(e?.message || t('assistant.requestFailed'));
-    } finally {
-      setLoading(false);
-    }
+  const send = async () => {
+    const text = input.trim();
+    if (!text || isBusy) return;
+    if (await sendMessage(text)) setInput('');
   };
 
   const onKeyDown = (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      sendMessage();
+      send();
     }
   };
+
+  const bubbles = messages
+    .map((message, index) => {
+      const key = `${message.role}-${index}`;
+      if (message.role === 'tool') {
+        const note = toolNote(message);
+        return note ? (
+          <div className="assistant-tool-note" key={key}>
+            {note}
+          </div>
+        ) : null;
+      }
+      // An assistant turn that only called tools has nothing to say yet; the confirmation card
+      // below is already showing what it wants to do.
+      if (!message.content) return null;
+      const mine = message.role === 'user';
+      return (
+        <div
+          className={`assistant-message ${mine ? 'assistant-message-user' : 'assistant-message-ai'}`}
+          key={key}
+        >
+          <div className="assistant-avatar">{mine ? <UserOutlined /> : <RobotOutlined />}</div>
+          <div className="assistant-bubble">{message.content}</div>
+        </div>
+      );
+    })
+    .filter(Boolean);
 
   return (
     <div className="assistant-panel">
@@ -60,34 +126,61 @@ export default function AssistantPanel({ trip, pois, onTripChange }) {
           <div className="assistant-title">{t('assistant.title')}</div>
           <div className="panel-note">{t('assistant.subtitle')}</div>
         </div>
+        {messages.length > 0 && (
+          <Button type="text" size="small" disabled={isBusy} onClick={resetConversation}>
+            {t('assistant.reset')}
+          </Button>
+        )}
       </div>
 
-      <div className="assistant-messages">
-        {messages.length === 0 && !loading && (
+      <div className="assistant-messages" ref={scroller}>
+        {bubbles.length === 0 && !isLoading && (
           <Empty description={t('assistant.empty')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
         )}
 
-        {messages.map((message, index) => (
-          <div
-            key={`${message.role}-${index}`}
-            className={`assistant-message ${message.role === 'user' ? 'assistant-message-user' : 'assistant-message-ai'}`}
-          >
-            <div className="assistant-avatar">
-              {message.role === 'user' ? <UserOutlined /> : <RobotOutlined />}
-            </div>
-            <div className="assistant-bubble">{message.content}</div>
-          </div>
-        ))}
+        {bubbles}
 
-        {loading && (
+        {isLoading && (
           <div className="assistant-message assistant-message-ai">
-            <div className="assistant-avatar"><RobotOutlined /></div>
-            <div className="assistant-bubble assistant-loading"><Spin size="small" /> {t('assistant.thinking')}</div>
+            <div className="assistant-avatar">
+              <RobotOutlined />
+            </div>
+            <div className="assistant-bubble assistant-loading">
+              <Spin size="small" /> {t('assistant.thinking')}
+            </div>
+          </div>
+        )}
+
+        {pendingConfirmation && (
+          <div className="assistant-confirm">
+            <div className="assistant-confirm-title">{t('assistant.confirmTitle')}</div>
+            <ul className="assistant-confirm-list">
+              {pendingConfirmation.toolCalls.map((call) => (
+                <li key={call.id}>{describeToolCall(call, pendingConfirmation.ctx.trip, pois, t)}</li>
+              ))}
+            </ul>
+            <div className="assistant-confirm-actions">
+              <Button type="primary" size="small" onClick={confirmToolCalls}>
+                {t('assistant.confirm')}
+              </Button>
+              <Button size="small" onClick={cancelToolCalls}>
+                {t('assistant.cancel')}
+              </Button>
+            </div>
           </div>
         )}
       </div>
 
-      {error && <div className="assistant-error">{error}</div>}
+      {error && (
+        <div className="assistant-error">
+          <span>{error.message}</span>
+          {error.code !== 'MODEL_LOOP_LIMIT' && error.code !== 'MISSING_TRIP' && (
+            <Button type="link" size="small" disabled={isBusy} onClick={retry}>
+              {t('assistant.retry')}
+            </Button>
+          )}
+        </div>
+      )}
 
       <div className="assistant-input-area">
         <Input.TextArea
@@ -96,14 +189,14 @@ export default function AssistantPanel({ trip, pois, onTripChange }) {
           onKeyDown={onKeyDown}
           autoSize={{ minRows: 2, maxRows: 5 }}
           placeholder={t('assistant.placeholder')}
-          disabled={loading}
+          disabled={isBusy}
         />
         <Button
           type="primary"
           icon={<SendOutlined />}
-          onClick={sendMessage}
-          loading={loading}
-          disabled={!input.trim()}
+          onClick={send}
+          loading={isLoading}
+          disabled={!input.trim() || isBusy}
         >
           {t('assistant.send')}
         </Button>

@@ -1011,6 +1011,10 @@ body {
 
 .assistant-error {
   flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin: 0 16px 8px;
   padding: 8px 10px;
   border-radius: 8px;
@@ -1019,6 +1023,49 @@ body {
   border: 1px solid #ffccc7;
   font-size: 12px;
   line-height: 18px;
+}
+
+/* A tool ran. One line, out of the conversation's flow — it reports, it does not converse. */
+.assistant-tool-note {
+  align-self: center;
+  max-width: 90%;
+  margin: 2px 0;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: var(--fill-quaternary, #f4f5f7);
+  color: var(--text-tertiary, #8c8c8c);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* Nothing runs until this is answered, so it reads as a card rather than another bubble. */
+.assistant-confirm {
+  flex: none;
+  margin: 4px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #ffe58f;
+  background: #fffbe6;
+}
+
+.assistant-confirm-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #614700;
+}
+
+.assistant-confirm-list {
+  margin: 6px 0 10px;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 20px;
+  color: #614700;
+}
+
+.assistant-confirm-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .assistant-input-area {
