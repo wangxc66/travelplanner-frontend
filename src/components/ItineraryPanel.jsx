@@ -139,7 +139,7 @@ function StopRow({
         </div>
         {/* Every one of these swaps the whole trip for the one the server returns, so a second
             click before that lands would act on a stop that is already gone — and this backend
-            answers a lost race with a bare 403. Shut the row down until the change comes back. */}
+            answers a lost race with a 404 about it. Shut the row down until the change comes back. */}
         <div className="stop-actions" onClick={(e) => e.stopPropagation()}>
           <Tooltip title={item.locked ? t('plan.unpin') : t('plan.pin')}>
             <Button

@@ -13,11 +13,11 @@ const en = {
   'auth.createAccount': 'Create account',
   'auth.continue': 'Continue',
   'auth.username': 'Username',
-  'auth.usernamePlaceholder': 'Pick anything',
+  'auth.usernamePlaceholder': '{min}–{max} letters, numbers, dots, dashes, or underscores',
   'auth.displayName': 'Display name',
   'auth.displayNamePlaceholder': 'How should we greet you?',
   'auth.password': 'Password',
-  'auth.passwordPlaceholder': 'At least a few characters',
+  'auth.passwordPlaceholder': 'At least {min} characters',
   'auth.footnote':
     'Accounts are local to your own database — pick any username. Tokyo, San Francisco and Paris are already loaded with places to plan.',
   'auth.failed': 'Could not sign you in',
@@ -138,6 +138,12 @@ const en = {
   // server errors
   'error.usernameTaken': 'That username is taken',
   'error.badCredentials': 'Wrong username or password',
+  // Account rules. `{min}` / `{max}` are filled by AuthPage until the server sends its own params.
+  'error.usernameRules': 'Username must be {min}–{max} letters, numbers, dots, dashes, or underscores',
+  'error.passwordRules': 'Password must be at least {min} characters and at most {max} UTF-8 bytes',
+  'error.displayNameRules': 'Display name must be {max} characters or fewer',
+  'error.rateLimited': 'Too many attempts — please wait a moment and try again',
+  'error.accessDenied': 'You do not have access to that',
   'error.signInRequired': 'Please sign in',
   'error.cityNotFound': 'City not found',
   'error.poiNotFound': 'Place not found',

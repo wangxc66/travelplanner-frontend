@@ -12,11 +12,11 @@ const zh = {
   'auth.createAccount': '注册',
   'auth.continue': '进入',
   'auth.username': '用户名',
-  'auth.usernamePlaceholder': '随便取一个',
+  'auth.usernamePlaceholder': '{min}–{max} 位字母、数字、点、横线或下划线',
   'auth.displayName': '显示名称',
   'auth.displayNamePlaceholder': '希望我们怎么称呼你？',
   'auth.password': '密码',
-  'auth.passwordPlaceholder': '至少几个字符',
+  'auth.passwordPlaceholder': '至少 {min} 位',
   'auth.footnote':
     '账号只存在你自己的本地数据库里，用户名随便填。东京、旧金山、巴黎的景点数据已经准备好了。',
   'auth.failed': '登录失败',
@@ -135,6 +135,12 @@ const zh = {
   // 后端错误
   'error.usernameTaken': '这个用户名已被占用',
   'error.badCredentials': '用户名或密码错误',
+  // 账号规则。`{min}` / `{max}` 在后端补上 params 之前，由 AuthPage 负责填。
+  'error.usernameRules': '用户名需 {min}–{max} 位，只能用字母、数字、点、横线或下划线',
+  'error.passwordRules': '密码至少 {min} 位，且不超过 {max} 个 UTF-8 字节',
+  'error.displayNameRules': '显示名称不能超过 {max} 个字符',
+  'error.rateLimited': '尝试次数过多，请稍后再试',
+  'error.accessDenied': '你没有访问该内容的权限',
   'error.signInRequired': '请先登录',
   'error.cityNotFound': '找不到该城市',
   'error.poiNotFound': '找不到该景点',

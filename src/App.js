@@ -207,8 +207,8 @@ useEffect(() => {
   /**
    * One mutation at a time. Every call here returns the whole recomputed trip, so a second one
    * started before the first lands was computed against state we are about to throw away — and if
-   * it names a stop the first one removed, the server answers a bare 403, which is indistinguishable
-   * from a dead session. A ref rather than `busy`, because two clicks in one tick both read the
+   * it names a stop the first one removed, the server answers 404 about a stop the traveller
+   * can still see. A ref rather than `busy`, because two clicks in one tick both read the
    * same render's state.
    */
   const mutating = useRef(false);

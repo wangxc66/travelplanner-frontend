@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Alert, Button, Form, Input, Segmented } from 'antd';
 import { CompassOutlined } from '@ant-design/icons';
 import { errorNotice, login, register, session } from '../utils';
+import { RULE_PARAMS, checkDisplayName, checkPassword, checkUsername } from '../authRules';
 import { useI18n } from '../i18n';
 import LanguageSwitch from './LanguageSwitch';
 
@@ -12,6 +13,27 @@ export default function AuthPage({ onAuthenticated }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  /**
+   * One rendering path for both a predicted failure and a real one: `check` answers with the same
+   * semantic code the server would have sent, and `params` supplies the numbers the server leaves
+   * out — anything it does send wins.
+   */
+  const say = (code, params) => t(code, { ...RULE_PARAMS[code], ...params });
+
+  const predict = (check) => ({
+    validator: (_, value) => {
+      const code = check(value);
+      return code ? Promise.reject(new Error(say(code))) : Promise.resolve();
+    },
+  });
+
+  /**
+   * Only registration is checked. An account created before these rules existed must still be able
+   * to sign in — holding an old password to the new floor would lock its owner out for good, and
+   * the server does not apply the rules on login either.
+   */
+  const registerOnly = (rules) => (mode === 'register' ? rules : []);
+
   const submit = async (values) => {
     setLoading(true);
     setError(null);
@@ -21,7 +43,10 @@ export default function AuthPage({ onAuthenticated }) {
       onAuthenticated(auth);
     } catch (e) {
       const notice = errorNotice(e);
-      setError(t(notice.code, notice.params, notice.message ?? t('auth.failed')));
+      setError(
+        t(notice.code, { ...RULE_PARAMS[notice.code], ...notice.params },
+          notice.message ?? t('auth.failed')),
+      );
     } finally {
       setLoading(false);
     }
@@ -59,23 +84,40 @@ export default function AuthPage({ onAuthenticated }) {
           <Form.Item
             name="username"
             label={t('auth.username')}
-            rules={[{ required: true, message: t('auth.required') }]}
+            validateFirst
+            rules={[
+              { required: true, message: t('auth.required') },
+              ...registerOnly([predict(checkUsername)]),
+            ]}
           >
-            <Input size="large" placeholder={t('auth.usernamePlaceholder')} autoComplete="username" />
+            <Input
+              size="large"
+              placeholder={t('auth.usernamePlaceholder', RULE_PARAMS['error.usernameRules'])}
+              autoComplete="username"
+            />
           </Form.Item>
           {mode === 'register' && (
-            <Form.Item name="displayName" label={t('auth.displayName')}>
+            <Form.Item
+              name="displayName"
+              label={t('auth.displayName')}
+              validateFirst
+              rules={[predict(checkDisplayName)]}
+            >
               <Input size="large" placeholder={t('auth.displayNamePlaceholder')} />
             </Form.Item>
           )}
           <Form.Item
             name="password"
             label={t('auth.password')}
-            rules={[{ required: true, message: t('auth.required') }]}
+            validateFirst
+            rules={[
+              { required: true, message: t('auth.required') },
+              ...registerOnly([predict(checkPassword)]),
+            ]}
           >
             <Input.Password
               size="large"
-              placeholder={t('auth.passwordPlaceholder')}
+              placeholder={t('auth.passwordPlaceholder', RULE_PARAMS['error.passwordRules'])}
               autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
             />
           </Form.Item>
