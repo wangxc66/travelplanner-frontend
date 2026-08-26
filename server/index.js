@@ -94,13 +94,19 @@ function isValidRequest(body) {
   );
 }
 
-function toOpenAIRequest(model, body) {
+function toOpenAIRequest(model, body, reasoningEffort = '') {
   const request = {
     model,
     messages: toOpenAIMessages(body.system, body.messages),
   };
   if (body.tools.length) {
     request.tools = toOpenAITools(body.tools);
+  }
+  // A reasoning model refuses function tools on /v1/chat/completions unless reasoning is switched
+  // off, so the effort travels as configuration rather than as a decision baked in here. Left
+  // unset the field is omitted entirely, which is what a non-reasoning model expects.
+  if (reasoningEffort) {
+    request.reasoning_effort = reasoningEffort;
   }
   return request;
 }
@@ -109,8 +115,9 @@ function configFromEnv(env) {
   return {
     apiKey: env.OPENAI_API_KEY || '',
     host: env.HOST || '127.0.0.1',
-    model: env.OPENAI_MODEL || 'gpt-5.5',
+    model: env.OPENAI_MODEL || 'gpt-5.6-sol',
     port: Number(env.PORT) || 5001,
+    reasoningEffort: env.OPENAI_REASONING_EFFORT || '',
   };
 }
 
@@ -223,7 +230,7 @@ function readJson(request) {
   });
 }
 
-function createRelayServer({ apiKey, model, createCompletion }) {
+function createRelayServer({ apiKey, model, createCompletion, reasoningEffort = '' }) {
   return http.createServer(async (request, response) => {
     if (request.url !== '/api/ai/chat') {
       sendJson(response, 404, { message: 'Not found.' });
@@ -261,13 +268,16 @@ function createRelayServer({ apiKey, model, createCompletion }) {
         sendJson(response, 400, { message: 'Invalid request body.' });
         return;
       }
-      const completion = await createCompletion(toOpenAIRequest(model, body));
+      const completion = await createCompletion(toOpenAIRequest(model, body, reasoningEffort));
       sendJson(response, 200, fromOpenAICompletion(completion));
     } catch (error) {
       const status =
         Number.isInteger(error?.status) && error.status >= 400 && error.status <= 599
           ? error.status
           : 502;
+      // The caller gets a message that leaks nothing. Whoever is running the relay gets the cause:
+      // a bad model name or an unsupported parameter is otherwise a silent 400 with no clue in it.
+      console.error('[relay] OpenAI request failed:', status, error?.error?.message || error?.message);
       sendJson(response, status, { message: 'OpenAI request failed.' });
     }
   });
@@ -287,7 +297,7 @@ if (require.main === module) {
   const path = require('node:path');
   require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
-  const { apiKey, host, model, port } = configFromEnv(process.env);
+  const { apiKey, host, model, port, reasoningEffort } = configFromEnv(process.env);
   let createCompletion;
   if (apiKey) {
     const OpenAI = require('openai');
@@ -295,7 +305,7 @@ if (require.main === module) {
     createCompletion = (request) => client.chat.completions.create(request);
   }
 
-  createRelayServer({ apiKey, model, createCompletion }).listen(port, host, () => {
+  createRelayServer({ apiKey, model, createCompletion, reasoningEffort }).listen(port, host, () => {
     console.log(`TripCanvas AI relay listening on port ${port}.`);
   });
 }

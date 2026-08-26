@@ -467,8 +467,9 @@ test('uses safe relay configuration defaults and allows explicit host override',
   assert.deepEqual(relay.configFromEnv({}), {
     apiKey: '',
     host: '127.0.0.1',
-    model: 'gpt-5.5',
+    model: 'gpt-5.6-sol',
     port: 5001,
+    reasoningEffort: '',
   });
   assert.deepEqual(
     relay.configFromEnv({
@@ -482,8 +483,60 @@ test('uses safe relay configuration defaults and allows explicit host override',
       host: '0.0.0.0',
       model: 'gpt-test',
       port: 5050,
+      reasoningEffort: '',
     }
   );
+  assert.equal(
+    relay.configFromEnv({ OPENAI_REASONING_EFFORT: 'none' }).reasoningEffort,
+    'none'
+  );
+});
+
+test('omits reasoning_effort unless one is configured', () => {
+  const body = {
+    system: 'Answer briefly.',
+    messages: [{ role: 'user', content: 'Hello' }],
+    tools: [],
+  };
+  assert.equal('reasoning_effort' in relay.toOpenAIRequest('m', body), false);
+  assert.equal('reasoning_effort' in relay.toOpenAIRequest('m', body, ''), false);
+  assert.equal(relay.toOpenAIRequest('m', body, 'none').reasoning_effort, 'none');
+});
+
+test('carries the configured reasoning effort into the provider call', async (t) => {
+  let seen = null;
+  const server = relay.createRelayServer({
+    apiKey: 'test-key',
+    model: 'gpt-5.6-sol',
+    reasoningEffort: 'none',
+    createCompletion: async (request) => {
+      seen = request;
+      return { choices: [{ message: { content: 'ok' } }] };
+    },
+  });
+  t.after(() => close(server));
+  const origin = await listen(server);
+
+  const response = await fetch(origin + '/api/ai/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      system: 'Answer briefly.',
+      messages: [{ role: 'user', content: 'Hello' }],
+      // A reasoning model rejects function tools without this, which is the whole reason it exists.
+      tools: [
+        {
+          name: 'add_stop',
+          description: 'Add a stop.',
+          parameters: { type: 'object', properties: {}, required: [] },
+        },
+      ],
+    }),
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(seen.reasoning_effort, 'none');
+  assert.equal(seen.tools.length, 1);
 });
 
 test('the executable entrypoint starts without a key', async (t) => {
