@@ -8,6 +8,7 @@ import {
   toggleLock,
 } from '../utils';
 import { executeTool } from './executeTool';
+import zh from '../i18n/zh';
 
 jest.mock('../utils', () => ({
   addItem: jest.fn(),
@@ -32,7 +33,16 @@ const pois = [
   { id: 202, name: 'New place' },
   { id: 303, name: 'Other' },
 ];
-const ctx = { tripId: 77, trip, pois };
+/** The real dictionary, walked the way the real t() walks it, minus the React context. */
+const t = (key, params, fallback) => {
+  const template = zh[key] ?? fallback ?? key;
+  return params
+    ? String(template).replace(/\{(\w+)\}/g, (whole, name) =>
+        params[name] === undefined ? whole : String(params[name]),
+      )
+    : template;
+};
+const ctx = { tripId: 77, trip, pois, t };
 const updatedTrip = { ...trip, title: 'Updated trip' };
 const apiMocks = [addItem, removeItem, moveItem, optimizeDay, rebalance, toggleLock];
 
@@ -212,7 +222,7 @@ test('uses errorNotice and converts backend errors to a readable failure', async
   const result = await executeTool('add_stop', { poiId: 202, dayIndex: 1 }, ctx);
 
   expect(errorNotice).toHaveBeenCalledWith(error);
-  expect(result).toEqual({ ok: false, reason: '这个景点不在东京。' });
+  expect(result).toEqual({ ok: false, reason: zh['error.poiWrongCity'].replace('{city}', '东京') });
 });
 
 test('does not leak a JavaScript stack in a failure reason', async () => {

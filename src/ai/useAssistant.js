@@ -92,6 +92,9 @@ export function useAssistant({
   onTripChange,
   maxRounds = MAX_MODEL_ROUNDS,
   copy: copyOverrides = DEFAULT_MESSAGES,
+  // B1 reads this off ctx to say what a tool did, or why it would not run, in the traveller's own
+  // language. Without one its strings fall back to their keys rather than throwing.
+  t = (key, params, fallback) => fallback || key,
 } = {}) {
   const [messages, setMessages] = useState([]);
   const [pendingConfirmation, setPendingConfirmation] = useState(null);
@@ -114,6 +117,7 @@ export function useAssistant({
     onTripChange,
     maxRounds,
     copy: { ...DEFAULT_MESSAGES, ...copyOverrides },
+    t,
   };
 
   const commitMessages = useCallback((next) => {
@@ -216,7 +220,7 @@ export function useAssistant({
       retryRef.current = null;
 
       const history = [...messagesRef.current, { role: 'user', content: text }];
-      const ctx = { tripId: options.trip.id, trip: options.trip, pois: options.pois };
+      const ctx = { tripId: options.trip.id, trip: options.trip, pois: options.pois, t: options.t };
       commitMessages(history);
       await requestModel(history, ctx, 0, operation);
       return true;

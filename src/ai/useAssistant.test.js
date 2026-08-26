@@ -121,15 +121,22 @@ test('executes multiple tools sequentially with the latest trip and feeds every 
     tripId: 77,
     trip,
     pois,
+    t: expect.any(Function),
   });
   expect(executeTool).toHaveBeenNthCalledWith(2, 'optimize_day', calls[1].input, {
     tripId: 77,
     trip: afterAdd,
     pois,
+    t: expect.any(Function),
   });
   expect(onTripChange).toHaveBeenCalledTimes(1);
   expect(onTripChange).toHaveBeenCalledWith(afterOptimize);
-  expect(system).toHaveBeenLastCalledWith({ tripId: 77, trip: afterOptimize, pois });
+  expect(system).toHaveBeenLastCalledWith({
+    tripId: 77,
+    trip: afterOptimize,
+    pois,
+    t: expect.any(Function),
+  });
   expect(ask.mock.calls[1][0].messages.slice(-2)).toEqual([
     { role: 'tool', toolCallId: 'call_1', content: JSON.stringify(firstResult) },
     { role: 'tool', toolCallId: 'call_2', content: JSON.stringify(secondResult) },

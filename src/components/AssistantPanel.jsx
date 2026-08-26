@@ -32,6 +32,7 @@ export default function AssistantPanel({ trip, pois, onTripChange }) {
     trip,
     pois,
     onTripChange,
+    t,
     copy: {
       cancelled: t('assistant.cancelled'),
       loopLimit: t('assistant.loopLimit'),

@@ -186,6 +186,23 @@ const zh = {
   'assistant.tool.rebalance': '把排不下的站点匀到别的天',
   'assistant.tool.toggle_lock': '锁定或解锁{place}',
   'assistant.tool.unknown': '执行 {name}',
+  // 工具做完之后，做了什么。
+  'assistant.done.add_stop': '已把地点加到第 {dayIndex} 天',
+  'assistant.done.remove_stop': '已把该地点从行程里移除',
+  'assistant.done.move_stop': '已把该地点移到第 {dayIndex} 天',
+  'assistant.done.optimize_day': '已重排第 {dayIndex} 天',
+  'assistant.done.rebalance': '已把站点重新分配到各天',
+  'assistant.done.toggle_lock': '已切换该地点的锁定状态',
+  // 工具为什么没跑。这些会原样喂回模型让它自己纠正，所以写成人话而不是代号。
+  // 引用类的失败直接复用后端自己的错误码。
+  'assistant.check.argsNotObject': '工具参数必须是一个普通对象。',
+  'assistant.check.unexpectedParam': '{param} 不是工具 {tool} 的参数。',
+  'assistant.check.missingParam': '缺少必填参数 {param}。',
+  'assistant.check.notInteger': '{param} 必须是整数。',
+  'assistant.check.belowMinimum': '{param} 不能小于 {min}。',
+  'assistant.check.tripUnusable': '当前行程数据不可用，请刷新后重试。',
+  'assistant.check.unknownTool': '没有叫 {name} 的工具。',
+  'assistant.check.toolFailed': '这次没能执行成功，请稍后再试。',
 
   // 时长
   'unit.minutes': '{m} 分钟',

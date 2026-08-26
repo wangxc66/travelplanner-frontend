@@ -190,6 +190,23 @@ const en = {
   'assistant.tool.rebalance': 'Spread stops off the days that overflow',
   'assistant.tool.toggle_lock': 'Pin or unpin {place}',
   'assistant.tool.unknown': 'Run {name}',
+  // What a tool did, once it has done it.
+  'assistant.done.add_stop': 'Added a place to day {dayIndex}',
+  'assistant.done.remove_stop': 'Removed that place from the trip',
+  'assistant.done.move_stop': 'Moved that place to day {dayIndex}',
+  'assistant.done.optimize_day': 'Reordered day {dayIndex}',
+  'assistant.done.rebalance': 'Spread the stops across the days',
+  'assistant.done.toggle_lock': 'Changed whether that place is pinned',
+  // Why a tool would not run. These go back to the model so it can correct itself, which is why
+  // they are sentences rather than codes. Reference failures reuse the server's own codes above.
+  'assistant.check.argsNotObject': 'Tool arguments must be a plain object.',
+  'assistant.check.unexpectedParam': '{param} is not a parameter of {tool}.',
+  'assistant.check.missingParam': 'Missing required parameter {param}.',
+  'assistant.check.notInteger': '{param} must be a whole number.',
+  'assistant.check.belowMinimum': '{param} cannot be less than {min}.',
+  'assistant.check.tripUnusable': 'The trip data is not usable right now — refresh and try again.',
+  'assistant.check.unknownTool': 'There is no tool called {name}.',
+  'assistant.check.toolFailed': 'That did not go through. Try again in a moment.',
 
   // durations
   'unit.minutes': '{m}m',
