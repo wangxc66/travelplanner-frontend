@@ -33,10 +33,16 @@ only in `server/.env`:
 
 ```dotenv
 OPENAI_API_KEY=
-OPENAI_MODEL=gpt-5.5
+OPENAI_MODEL=gpt-5.6-sol
+OPENAI_REASONING_EFFORT=none
 HOST=127.0.0.1
 PORT=5001
 ```
+
+`OPENAI_REASONING_EFFORT` is what makes the tools work. A reasoning model refuses function tools on
+`/v1/chat/completions` unless reasoning is switched off, and every change the assistant makes goes
+through a tool — so with this empty the assistant can answer questions and nothing else. Leave it
+empty only for a model that does not reason. Switching models is this file, not the code.
 
 Fill in `OPENAI_API_KEY` locally; never add a `REACT_APP_` OpenAI key. `server/.env` is ignored by Git,
 while `server/.env.example` deliberately keeps the key empty. Hosted deployments should provide the
@@ -56,7 +62,37 @@ npm run dev
 
 During development, `/api/ai` is proxied to `http://localhost:5001`; the existing `/api` and `/auth`
 routes remain proxied to Spring Boot at `http://localhost:8080`. If the key is absent, the relay still
-starts and returns an explicit `503` configuration error without exposing any secret.
+starts and returns an explicit `503` configuration error without exposing any secret. Whatever the
+provider answers, the browser gets one fixed message; the cause is printed in the relay's own console,
+which is where to look when a request fails for no visible reason.
+
+## The assistant
+
+Third tab in the side panel. It reads the trip and it can change it.
+
+Everything it knows arrives in the system prompt: the itinerary as scheduled — arrival and leave
+times, travel between stops, warnings — plus every place in the city that is not in the trip yet. The
+catalog is 84 places across three cities, so the whole of it fits and there is nothing to retrieve.
+
+Changes go through six tools — add, remove, move, optimize a day, rebalance, pin — each one a call
+into the same `src/utils.js` function the buttons use. **Nothing runs until the traveller confirms.**
+The model proposes, a card names the change in plain words, and only then does anything reach the
+server. The trip that comes back replaces the whole trip in App state, so the timeline and the map
+follow along the way they do for any other edit.
+
+The loop stops after six model rounds. Ids are read from the prompt and never invented; `tripId` comes
+from the app, never from the model. Text inside place names and descriptions is content, not
+instruction.
+
+```
+src/ai/llmClient.js     ask() — the one call into the relay
+src/ai/context.js       the trip, rendered for a model to read
+src/ai/prompts.js       standing instructions
+src/ai/tools.js         six tool schemas, in no vendor's dialect
+src/ai/executeTool.js   validates the model's arguments, then calls the backend
+src/ai/useAssistant.js  the loop: ask, confirm, execute, feed back, ask again
+src/ai/describeTool.js  a tool call and its result, in words
+```
 
 ## Google Maps
 

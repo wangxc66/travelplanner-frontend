@@ -5,43 +5,8 @@ import { useI18n } from '../i18n';
 import { ask } from '../ai/assistantAsk';
 import { buildContext } from '../ai/context';
 import { buildSystemPrompt } from '../ai/prompts';
+import { describeToolCall, toolNote } from '../ai/describeTool';
 import useAssistant from '../ai/useAssistant';
-
-/** Every id the model is allowed to name comes from the trip, so both lookups start there. */
-function findItem(trip, itemId) {
-  for (const day of trip?.days ?? []) {
-    const found = day.items.find((item) => item.id === itemId);
-    if (found) return found;
-  }
-  return null;
-}
-
-/**
- * What the traveller is about to approve, in their own language. The tool layer answers in codes
- * and ids; a confirmation that reads "add poiId 3 to day 2" asks someone to approve a number.
- */
-function describeToolCall(call, trip, pois, t) {
-  const place =
-    call.name === 'add_stop'
-      ? pois.find((poi) => poi.id === call.input.poiId)?.name
-      : findItem(trip, call.input.itemId)?.poi?.name;
-  const params = { ...call.input, name: call.name, place: place || t('assistant.thisPlace') };
-  return t(`assistant.tool.${call.name}`, params, t('assistant.tool.unknown', params));
-}
-
-/**
- * A tool result is JSON on its way back to the model. Only a success is worth a line of its own:
- * the model answers the next turn holding the failure reason, and a cancellation already has
- * useAssistant's own message behind it — reporting either here says the same thing twice.
- */
-function toolNote(message) {
-  try {
-    const result = JSON.parse(message.content);
-    return result?.ok ? result.summary || null : null;
-  } catch {
-    return null;
-  }
-}
 
 export default function AssistantPanel({ trip, pois, onTripChange }) {
   const { t } = useI18n();
