@@ -423,16 +423,37 @@ body {
 
 /* ---------------- day tabs ---------------- */
 
+/* Only four pills fit the 352px strip, so a week-long trip keeps the rest past the
+   right edge. The scrollbar is left visible, the way .chip-row does it: hidden, it
+   read as if the trip simply ended at day 4. */
 .day-strip {
   display: flex;
   gap: 5px;
   overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 2px;
+  overscroll-behavior-x: contain;
+  /* Chromium honours scrollbar-width/-color over the ::-webkit- rules when both are set; those are
+     kept below for browsers that only understand the older syntax. */
+  scrollbar-width: thin;
+  scrollbar-color: #d0d6e2 var(--bg-load-track);
+  padding-bottom: 8px;
 }
 
 .day-strip::-webkit-scrollbar {
-  display: none;
+  height: 6px;
+}
+
+.day-strip::-webkit-scrollbar-track {
+  background: var(--bg-load-track);
+  border-radius: var(--radius-pill);
+}
+
+.day-strip::-webkit-scrollbar-thumb {
+  background: #d0d6e2;
+  border-radius: var(--radius-pill);
+}
+
+.day-strip::-webkit-scrollbar-thumb:hover {
+  background: var(--map-rail);
 }
 
 /* 84px rather than the old 92: five days fit the strip before it has to scroll. */
